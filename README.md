@@ -5,8 +5,7 @@ Magenta.js.
 
 ## Demo
 
-- [tone2abc](https://marmooo.github.io/tone2abc/)
-- [MIDI Score](https://marmooo.github.io/midi-score/)
+- [midi2abc](https://marmooo.github.io/midi2abc/)
 
 ## Build
 

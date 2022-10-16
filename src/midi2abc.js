@@ -204,7 +204,7 @@ function guessClef(ins) {
   if (pitch > 64) {
     return "G2";
   } else {
-    return "F3";
+    return "F4";
   }
 }
 

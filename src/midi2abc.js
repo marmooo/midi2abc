@@ -474,7 +474,8 @@ function segmentToString(ns, ins, instrumentId, tempo) {
   section = 1;
   sectionEnd = section * sectionLength;
 
-  getChord(ins).forEach((c, i) => {
+  const cs = getChord(ins);
+  cs.forEach((c, i) => {
     const nextC = cs[i + 1];
     if (i == 0 && c[0].startTime != 0) {
       abcString += durationToRestStrings(

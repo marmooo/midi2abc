@@ -67,6 +67,7 @@ function noteToKeyString(note) {
     for (let i = 0; i < count; i++) {
       keyString += ",";
     }
+    if (note.tie) keyString += "-";
     return keyString;
   }
 }
@@ -116,20 +117,6 @@ function splitInstruments(notes) {
     }
   });
   result.push(notes.slice(pos));
-  return result;
-}
-
-function noteSequenceToChordSequence(ns) {
-  let t = Infinity;
-  const result = [];
-  ns.forEach((n) => {
-    if (t == n.startTime) {
-      result.at(-1).push(n);
-    } else {
-      t = n.startTime;
-      result.push([n]);
-    }
-  });
   return result;
 }
 
@@ -192,15 +179,6 @@ function calcKeyLength(duration) {
     }
     return `/${n}`;
   }
-}
-
-function normalizeKey(chord, nextChord) {
-  if (!nextChord) return chord;
-  chord.forEach((c) => {
-    const n = nextChord[0];
-    if (c.endTime > n.startTime) c.endTime = n.startTime;
-  });
-  return chord;
 }
 
 function durationToRestString(startTime, endTime, tempo, unitLength) {
@@ -288,30 +266,6 @@ function chordNoteToTieString(c, ns, unitLength, sectionLength) {
     return abcString;
   }
 }
-
-// function durationToRestStrings(startTime, endTime, tempo, unitLength, sectionLength) {
-//   let abcString = "";
-//   if (round(sectionEnd, 1e13) <= round(endTime, 1e13)) {
-//     if (round(startTime, 1e13) < round(sectionEnd, 1e13)) {
-//       abcString += durationToRestString(startTime, endTime, tempo, unitLength);
-//       abcString += "|";
-//       if (section % 4 == 0) abcString += "\n";
-//       section += 1;
-//       sectionEnd = section * sectionLength;
-//     } else {
-//       if (round(sectionEnd, 1e13) == round(startTime, 1e13)) {
-//         abcString += "|";
-//         if (section % 4 == 0) abcString += "\n";
-//         section += 1;
-//         sectionEnd = section * sectionLength;
-//         abcString += durationToRestString(startTime, endTime, tempo, unitLength);
-//       }
-//     }
-//   } else if (round(startTime, 1e13) < round(endTime, 1e13)) {
-//     abcString += durationToRestString(startTime, endTime, tempo, unitLength);
-//   }
-//   return abcString;
-// }
 
 function durationToRestStrings(
   startTime,
@@ -408,6 +362,109 @@ function durationToRestStrings(
   return abcString;
 }
 
+function cloneNote(note) {
+  return {
+    instrument: note.instrument,
+    program: note.program,
+    startTime: note.startTime,
+    endTime: note.endTime,
+    pitch: note.pitch,
+    velocity: note.pitch,
+    isDrum: note.isDrum,
+  };
+}
+
+function getTargetPosition(ns, i) {
+  const endTime = ns[i].endTime;
+  i += 1;
+  while (ns[i] && ns[i].startTime < endTime) {
+    i += 1;
+  }
+  return i;
+}
+
+function getNotationBreaks(ns) {
+  const set = new Set();
+  ns.forEach((n) => {
+    set.add(n.startTime);
+    set.add(n.endTime);
+  });
+  const arr = [...set];
+  arr.sort((a, b) => {
+    if (a > b) return 1;
+    if (a < b) return -1;
+    return 0;
+  });
+  return arr.slice(1);
+}
+
+function getChord(ns) {
+  let i = 0;
+  const result = [];
+  while (ns[i]) {
+    const j = getTargetPosition(ns, i);
+    const target = ns.slice(i, j);
+    const notationBreaks = getNotationBreaks(target);
+    if (notationBreaks.length == 1) {
+      result.push(target);
+      i = j;
+    } else {
+      const endTime = ns[i].endTime;
+      const targetBreaks = notationBreaks.filter((t) => t <= endTime);
+      const chords = splitChord(target, targetBreaks);
+      result.push(...chords);
+      const nextTarget = target
+        .filter((n) => endTime < n.endTime)
+        .map((n) => {
+          const newNote = cloneNote(n);
+          newNote.startTime = endTime;
+          return newNote;
+        });
+      ns = ns.slice(j);
+      ns.unshift(...nextTarget);
+      i = 0;
+    }
+  }
+  return result;
+}
+
+function splitChord(chordNote, endTimes) {
+  const result = [];
+  endTimes.forEach((endTime, i) => {
+    if (i == 0) {
+      const newChord = [];
+      const startTime = chordNote[0].startTime;
+      chordNote.forEach((n) => {
+        if (n.startTime <= startTime) {
+          const newNote = cloneNote(n);
+          newNote.endTime = endTime;
+          if (endTime < n.endTime) {
+            newNote.tie = true;
+          }
+          newChord.push(newNote);
+        }
+      });
+      result.push(newChord);
+    } else {
+      const startTime = endTimes[i - 1];
+      const newChord = [];
+      chordNote.forEach((n) => {
+        if (n.startTime <= startTime && endTime <= n.endTime) {
+          const newNote = cloneNote(n);
+          newNote.startTime = startTime;
+          newNote.endTime = endTime;
+          if (endTime < n.endTime) {
+            newNote.tie = true;
+          }
+          newChord.push(newNote);
+        }
+      });
+      result.push(newChord);
+    }
+  });
+  return result;
+}
+
 function segmentToString(ns, ins, instrumentId, tempo) {
   const beat = ns.timeSignatures[0].numerator /
     ns.timeSignatures[0].denominator;
@@ -416,10 +473,9 @@ function segmentToString(ns, ins, instrumentId, tempo) {
   let abcString = setInstrumentHeader(ns, ins, instrumentId, unitLength);
   section = 1;
   sectionEnd = section * sectionLength;
-  const cs = noteSequenceToChordSequence(ins);
-  cs.forEach((c, i) => {
+
+  getChord(ins).forEach((c, i) => {
     const nextC = cs[i + 1];
-    normalizeKey(c, nextC);
     if (i == 0 && c[0].startTime != 0) {
       abcString += durationToRestStrings(
         0,

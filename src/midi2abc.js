@@ -186,7 +186,11 @@ function durationToRestString(startTime, endTime, tempo, unitLength) {
     const duration = (endTime - startTime) * tempo.qpm * unitLength;
     const keyLength = calcKeyLength(duration);
     if (keyLength == null) return "";
-    return "z" + keyLength;
+    if (keyLength[0] == "(") {
+      return `${keyLength}z`;
+    } else {
+      return `z${keyLength}`;
+    }
   } else {
     return "";
   }

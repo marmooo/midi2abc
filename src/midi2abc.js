@@ -179,12 +179,37 @@ function calcKeyLength(duration) {
   }
 }
 
+function splitRestDurtion(duration) {
+  const base = 60;
+  duration = Math.round(duration * 1e6) / 1e6;
+  if (duration <= base) return [duration];
+  const result = [];
+  while(duration > 60) {
+    let n = 2;
+    while (duration / n > base) n *= 2;
+    if (duration / n == base) {
+      result.push(duration);
+      return result;
+    } else {
+      const rest = n * 30;
+      result.push(rest);
+      duration -= rest;
+    }
+  }
+  result.push(duration);
+  return result;
+}
+
 function durationToRestString(startTime, endTime, tempo, unitLength) {
   if (startTime < endTime) {
     const duration = (endTime - startTime) * tempo.qpm * unitLength;
-    const [len1, len2] = calcKeyLength(duration);
-    if (len2 == null) return "";
-    return len1 + "z" + len2;
+    let abc = "";
+    splitRestDurtion(duration).forEach((d) => {
+      const [len1, len2] = calcKeyLength(d);
+      if (len2 == null) return "";
+      abc += len1 + "z" + len2;
+    });
+    return abc;
   } else {
     return "";
   }

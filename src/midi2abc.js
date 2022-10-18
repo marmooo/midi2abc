@@ -209,7 +209,10 @@ function cleanupTime(ns) {
     if (startTime < min) min = startTime;
   });
   if (min != 0) {
-    ns.forEach((n) => n.startTime -= min);
+    ns.forEach((n) => {
+      n.startTime -= min;
+      n.endTime -= min;
+    });
   }
   return ns;
 }

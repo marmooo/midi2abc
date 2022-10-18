@@ -1,16 +1,13 @@
 function noteToString(note, tempo, unitLength) {
   const keyString = noteToKeyString(note);
   const duration = (note.endTime - note.startTime) * tempo.qpm * unitLength;
-  const keyLength = calcKeyLength(duration);
-  if (keyLength == null) {
+  const [len1, len2] = calcKeyLength(duration);
+  if (len2 == null) {
     console.error(note);
     return "";
   }
-  if (keyLength[0] == "(") { // tuplet
-    return keyLength + keyString;
-  } else {
-    return keyString + keyLength;
-  }
+  const tie = (note.tie) ? "-" : "";
+  return len1 + keyString + len2 + tie;
 }
 
 function chordNoteToString(chordNote, tempo, unitLength) {
@@ -18,20 +15,17 @@ function chordNoteToString(chordNote, tempo, unitLength) {
     return noteToString(chordNote[0], tempo, unitLength);
   } else {
     const str = chordNote.map((note) => {
-      return noteToKeyString(note, tempo);
+      const tie = (note.tie) ? "-" : "";
+      return noteToKeyString(note, tempo) + tie;
     }).join("");
     const n = chordNote[0];
     const duration = (n.endTime - n.startTime) * tempo.qpm * unitLength;
-    const keyLength = calcKeyLength(duration);
-    if (keyLength == null) {
+    const [len1, len2] = calcKeyLength(duration);
+    if (len2 == null) {
       console.error(chordNote);
       return "";
     }
-    if (keyLength[0] == "(") {
-      return `${keyLength}[${str}]`;
-    } else {
-      return `[${str}]${keyLength}`;
-    }
+    return len1 + `[${str}]` + len2;
   }
 }
 
@@ -67,7 +61,6 @@ function noteToKeyString(note) {
     for (let i = 0; i < count; i++) {
       keyString += ",";
     }
-    if (note.tie) keyString += "-";
     return keyString;
   }
 }
@@ -123,74 +116,75 @@ function splitInstruments(notes) {
 function calcKeyLength(duration) {
   const base = 60;
   duration = Math.round(duration * 1e6) / 1e6;
-  if (duration == base) return "";
+  if (duration == base) return ["", ""];
   if (duration <= 0) {
     console.error(`duration is negative: ${duration}`);
-    return null;
+    return [null, null];
   }
   let n = 2;
   if (duration > base) {
     // normal note
     while (duration / n > base) n *= 2;
-    if (duration / n == base) return `${n}`;
+    if (duration / n == base) return ["", `${n}`];
     // dotted note
     n /= 2;
-    for (let s = 2; s <= 8; s *= 2) {
-      const t = 2 * s - 1;
-      const l = n * t / s;
-      if (duration / l == base) {
-        if (l == Math.round(l)) {
-          return `${l}`;
+    for (let p = 2; p <= 128; p *= 2) {
+      const q = 2 * p - 1;
+      const k = n * q / p;
+      if (round(duration / k, 1e6) == base) {
+        if (k == Math.round(k)) {
+          return ["", `${k}`];
         } else {
-          return `${n * t}/${s}`;
+          return ["", `${n * q}/${p}`];
         }
       }
     }
-    // TODO: tuplet
-    n *= 4;
-    for (let i = 2; i <= 9; i++) {
+    n *= 2;
+    for (let i = 3; i <= 9; i++) {
       for (let j = 1; j <= i - 1; j++) {
-        if (duration * n * j / i == base) {
-          return `(${j}:${i}`;
+        if (duration / n * i / j == base) {
+          return [`(${i}:${j}`, `${n}`];
         }
       }
     }
-    return `${n}`;
+    console.error(duration, n);
+    return ["", `${n}`];
   } else {
     // normal note
     while (duration * n < base) n *= 2;
-    if (duration * n == base) return `/${n}`;
+    if (duration * n == base) return ["", `/${n}`];
     // dotted note
-    n *= 2;
-    for (let s = 2; s <= 8; s *= 2) {
-      const t = 2 * s - 1;
-      if (duration * n * s / t == base) {
-        return `${t}/${s * n}`;
-      }
-    }
-    // TODO: tuplet
-    n /= 4;
-    for (let i = 2; i <= 9; i++) {
-      for (let j = 1; j <= i - 1; j++) {
-        if (duration * n * i / j == base) {
-          return `(${i}:${j}`;
+    for (let p = 2; p <= 128; p *= 2) {
+      const q = 2 * p - 1;
+      const k = n * q / p;
+      if (round(duration / k, 1e6) == base) {
+        if (k == Math.round(k)) {
+          return ["", `${k}`];
+        } else {
+          return ["", `${q}/${p * n}`];
         }
       }
     }
-    return `/${n}`;
+    // tuplet
+    n /= 2;
+    for (let i = 3; i <= 9; i++) {
+      for (let j = 1; j <= i - 1; j++) {
+        if (duration / n * i / j == base) {
+          return [`(${i}:${j}`, `/${n}`];
+        }
+      }
+    }
+    console.error(duration, n);
+    return ["", `/${n}`];
   }
 }
 
 function durationToRestString(startTime, endTime, tempo, unitLength) {
   if (startTime < endTime) {
     const duration = (endTime - startTime) * tempo.qpm * unitLength;
-    const keyLength = calcKeyLength(duration);
-    if (keyLength == null) return "";
-    if (keyLength[0] == "(") {
-      return `${keyLength}z`;
-    } else {
-      return `z${keyLength}`;
-    }
+    const [len1, len2] = calcKeyLength(duration);
+    if (len2 == null) return "";
+    return len1 + "z" + len2;
   } else {
     return "";
   }
@@ -535,6 +529,7 @@ V:${instrumentId + 1}
 let section;
 let sectionEnd;
 export default function tone2abc(ns, options) {
+  console.log(ns);
   let abcString = "X:1\n";
   if (options) {
     if (options.title) abcString += `T:${options.title}\n`;

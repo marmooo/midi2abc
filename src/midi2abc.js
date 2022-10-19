@@ -360,7 +360,7 @@ function durationToRestStrings(
         section += 1;
         prevSectionEnd = sectionEnd;
         sectionEnd = section * sectionLength;
-        const count = Math.floor((sectionEnd - prevSectionEnd) / sectionLength);
+        const count = Math.floor((endTime - prevSectionEnd) / sectionLength);
         for (let i = 0; i < count; i++) {
           abcString += durationToRestString(
             prevSectionEnd,

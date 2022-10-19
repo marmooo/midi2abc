@@ -514,26 +514,17 @@ function segmentToString(ns, ins, instrumentId, tempo) {
     }
     if (round(sectionEnd, 1e13) < round(c[0].endTime, 1e13)) {
       abcString += chordNoteToTieString(c, ns, unitLength, sectionLength);
-      if (nextC) {
-        abcString += durationToRestStrings(
-          c[0].endTime,
-          nextC[0].startTime,
-          tempo,
-          unitLength,
-          sectionLength,
-        );
-      }
     } else {
       abcString += chordNoteToString(c, tempo, unitLength);
-      if (nextC) {
-        abcString += durationToRestStrings(
-          c[0].endTime,
-          nextC[0].startTime,
-          tempo,
-          unitLength,
-          sectionLength,
-        );
-      }
+    }
+    if (nextC) {
+      abcString += durationToRestStrings(
+        c[0].endTime,
+        nextC[0].startTime,
+        tempo,
+        unitLength,
+        sectionLength,
+      );
     }
   });
   abcString += "\n";

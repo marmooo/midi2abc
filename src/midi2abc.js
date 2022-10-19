@@ -184,7 +184,7 @@ function splitRestDurtion(duration) {
   duration = Math.round(duration * 1e6) / 1e6;
   if (duration <= base) return [duration];
   const result = [];
-  while(duration > 60) {
+  while (duration > 60) {
     let n = 2;
     while (duration / n > base) n *= 2;
     if (duration / n == base) {

@@ -1,6 +1,6 @@
-function noteToString(note, tempo, unitLength) {
+function noteToString(note, unitTime) {
   const keyString = noteToKeyString(note);
-  const duration = (note.endTime - note.startTime) * tempo.qpm * unitLength;
+  const duration = (note.endTime - note.startTime) * unitTime;
   const [len1, len2] = calcKeyLength(duration);
   if (len2 == null) {
     console.error(note);
@@ -10,16 +10,16 @@ function noteToString(note, tempo, unitLength) {
   return len1 + keyString + len2 + tie;
 }
 
-function chordNoteToString(chordNote, tempo, unitLength) {
+function chordNoteToString(chordNote, unitTime) {
   if (chordNote.length == 1) {
-    return noteToString(chordNote[0], tempo, unitLength);
+    return noteToString(chordNote[0], unitTime);
   } else {
     const str = chordNote.map((note) => {
       const tie = (note.tie) ? "-" : "";
-      return noteToKeyString(note, tempo) + tie;
+      return noteToKeyString(note, unitTime) + tie;
     }).join("");
     const n = chordNote[0];
-    const duration = (n.endTime - n.startTime) * tempo.qpm * unitLength;
+    const duration = (n.endTime - n.startTime) * unitTime;
     const [len1, len2] = calcKeyLength(duration);
     if (len2 == null) {
       console.error(chordNote);
@@ -202,9 +202,9 @@ function splitRestDurtion(duration) {
   return result;
 }
 
-function durationToRestString(startTime, endTime, tempo, unitLength) {
+function durationToRestString(startTime, endTime, unitTime) {
   if (startTime < endTime) {
-    const duration = (endTime - startTime) * tempo.qpm * unitLength;
+    const duration = (endTime - startTime) * unitTime;
     let abc = "";
     splitRestDurtion(duration).forEach((d) => {
       const [len1, len2] = calcKeyLength(d);
@@ -252,11 +252,11 @@ function round(x, epsilon) {
   return Math.round(x * epsilon) / epsilon;
 }
 
-function chordNoteToTieString(c, unitLength, sectionLength, tempo) {
+function chordNoteToTieString(c, unitTime, sectionLength, tempo) {
   let abcString = "";
   const endTime = c[0].endTime;
   c.forEach((n) => n.endTime = sectionEnd);
-  abcString += chordNoteToString(c, tempo, unitLength);
+  abcString += chordNoteToString(c, unitTime);
   if (round(sectionEnd, 1e13) == round(endTime, 1e13)) {
     abcString += "|";
     if (section % 4 == 0) abcString += "\n";
@@ -274,7 +274,7 @@ function chordNoteToTieString(c, unitLength, sectionLength, tempo) {
         n.startTime = sectionEnd;
         n.endTime = nextSectionEnd;
       });
-      abcString += chordNoteToString(c, tempo, unitLength);
+      abcString += chordNoteToString(c, unitTime);
       if (round(nextSectionEnd, 1e13) == round(endTime, 1e13)) {
         abcString += "|";
         if (nextSection % 4 == 0) abcString += "\n";
@@ -292,7 +292,7 @@ function chordNoteToTieString(c, unitLength, sectionLength, tempo) {
       n.startTime = sectionEnd;
       n.endTime = endTime;
     });
-    abcString += chordNoteToString(c, tempo, unitLength);
+    abcString += chordNoteToString(c, unitTime);
     section += 1;
     sectionEnd = tempo.time + section * sectionLength;
     return abcString;
@@ -303,43 +303,28 @@ function durationToRestStrings(
   startTime,
   endTime,
   tempo,
-  unitLength,
+  unitTime,
   sectionLength,
 ) {
   let abcString = "";
   if (round(sectionEnd, 1e13) <= round(endTime, 1e13)) {
     let prevSectionEnd = sectionEnd;
     if (round(startTime, 1e13) < round(sectionEnd, 1e13)) {
-      abcString += durationToRestString(
-        startTime,
-        sectionEnd,
-        tempo,
-        unitLength,
-      );
+      abcString += durationToRestString(startTime, sectionEnd, unitTime);
       abcString += "|";
       if (section % 4 == 0) abcString += "\n";
       section += 1;
       sectionEnd = tempo.time + section * sectionLength;
       const count = Math.floor((endTime - prevSectionEnd) / sectionLength);
       for (let i = 0; i < count; i++) {
-        abcString += durationToRestString(
-          prevSectionEnd,
-          sectionEnd,
-          tempo,
-          unitLength,
-        );
+        abcString += durationToRestString(prevSectionEnd, sectionEnd, unitTime);
         abcString += "|";
         if (section % 4 == 0) abcString += "\n";
         section += 1;
         prevSectionEnd = sectionEnd;
         sectionEnd = tempo.time + section * sectionLength;
       }
-      abcString += durationToRestString(
-        prevSectionEnd,
-        endTime,
-        tempo,
-        unitLength,
-      );
+      abcString += durationToRestString(prevSectionEnd, endTime, unitTime);
     } else {
       if (round(sectionEnd, 1e13) == round(startTime, 1e13)) {
         abcString += "|";
@@ -348,19 +333,9 @@ function durationToRestStrings(
         sectionEnd = tempo.time + section * sectionLength;
       }
       if (round(endTime, 1e13) < round(sectionEnd, 13)) {
-        abcString += durationToRestString(
-          startTime,
-          endTime,
-          tempo,
-          unitLength,
-        );
+        abcString += durationToRestString(startTime, endTime, unitTime);
       } else {
-        abcString += durationToRestString(
-          startTime,
-          sectionEnd,
-          tempo,
-          unitLength,
-        );
+        abcString += durationToRestString(startTime, sectionEnd, unitTime);
         abcString += "|";
         if (section % 4 == 0) abcString += "\n";
         section += 1;
@@ -371,8 +346,7 @@ function durationToRestStrings(
           abcString += durationToRestString(
             prevSectionEnd,
             sectionEnd,
-            tempo,
-            unitLength,
+            unitTime,
           );
           abcString += "|";
           if (section % 4 == 0) abcString += "\n";
@@ -380,16 +354,11 @@ function durationToRestStrings(
           prevSectionEnd = sectionEnd;
           sectionEnd = tempo.time + section * sectionLength;
         }
-        abcString += durationToRestString(
-          prevSectionEnd,
-          endTime,
-          tempo,
-          unitLength,
-        );
+        abcString += durationToRestString(prevSectionEnd, endTime, unitTime);
       }
     }
   } else if (round(startTime, 1e13) < round(endTime, 1e13)) {
-    abcString += durationToRestString(startTime, endTime, tempo, unitLength);
+    abcString += durationToRestString(startTime, endTime, unitTime);
   }
   return abcString;
 }
@@ -501,6 +470,7 @@ function segmentToString(ns, ins, instrumentId, tempo) {
   const beat = ns.timeSignatures[0].numerator /
     ns.timeSignatures[0].denominator;
   const unitLength = 2 ** Math.floor(1 / beat);
+  const unitTime = tempo.qpm * unitLength;
   const sectionLength = 240 / tempo.qpm * beat;
   let abcString = setInstrumentHeader(ns, ins, instrumentId, unitLength);
   section = 1;
@@ -514,21 +484,21 @@ function segmentToString(ns, ins, instrumentId, tempo) {
         tempo.time,
         c[0].startTime,
         tempo,
-        unitLength,
+        unitTime,
         sectionLength,
       );
     }
     if (round(sectionEnd, 1e13) < round(c[0].endTime, 1e13)) {
-      abcString += chordNoteToTieString(c, unitLength, sectionLength, tempo);
+      abcString += chordNoteToTieString(c, unitTime, sectionLength, tempo);
     } else {
-      abcString += chordNoteToString(c, tempo, unitLength);
+      abcString += chordNoteToString(c, unitTime);
     }
     if (nextC) {
       abcString += durationToRestStrings(
         c[0].endTime,
         nextC[0].startTime,
         tempo,
-        unitLength,
+        unitTime,
         sectionLength,
       );
     }

@@ -252,7 +252,7 @@ function round(x, epsilon) {
   return Math.round(x * epsilon) / epsilon;
 }
 
-function chordNoteToTieString(c, ns, unitLength, sectionLength, tempo) {
+function chordNoteToTieString(c, unitLength, sectionLength, tempo) {
   let abcString = "";
   const endTime = c[0].endTime;
   c.forEach((n) => n.endTime = sectionEnd);
@@ -519,7 +519,7 @@ function segmentToString(ns, ins, instrumentId, tempo) {
       );
     }
     if (round(sectionEnd, 1e13) < round(c[0].endTime, 1e13)) {
-      abcString += chordNoteToTieString(c, ns, unitLength, sectionLength, tempo);
+      abcString += chordNoteToTieString(c, unitLength, sectionLength, tempo);
     } else {
       abcString += chordNoteToString(c, tempo, unitLength);
     }

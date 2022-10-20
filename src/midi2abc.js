@@ -143,6 +143,7 @@ function calcKeyLength(duration) {
     for (let i = 3; i <= 9; i++) {
       for (let j = 1; j <= i - 1; j++) {
         if (duration / n * i / j == base) {
+          if (n == 1) return [`(${i}:${j}`, ""];
           return [`(${i}:${j}`, `${n}`];
         }
       }
@@ -170,6 +171,7 @@ function calcKeyLength(duration) {
     for (let i = 3; i <= 9; i++) {
       for (let j = 1; j <= i - 1; j++) {
         if (duration / n * i / j == base) {
+          if (n == 1) return [`(${i}:${j}`, ""];
           return [`(${i}:${j}`, `/${n}`];
         }
       }

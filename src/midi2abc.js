@@ -332,7 +332,7 @@ function durationToRestStrings(
         section += 1;
         sectionEnd = tempo.time + section * sectionLength;
       }
-      if (round(endTime, 1e13) < round(sectionEnd, 13)) {
+      if (round(endTime, 1e13) < round(sectionEnd, 1e13)) {
         abcString += durationToRestString(startTime, endTime, unitTime);
       } else {
         abcString += durationToRestString(startTime, sectionEnd, unitTime);

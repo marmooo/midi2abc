@@ -265,7 +265,7 @@ function chordNoteToTieString(c, unitTime, sectionLength, tempo) {
     return abcString;
   } else {
     abcString += "-|";
-    const count = Math.floor((c[0].endTime - c[0].startTime) / sectionLength);
+    const count = Math.floor((endTime - c[0].startTime) / sectionLength);
     if (section % 4 == 0) abcString += "\n";
     for (let i = 1; i < count; i++) {
       const nextSection = section + 1;

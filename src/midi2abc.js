@@ -501,6 +501,14 @@ function segmentToString(ns, ins, instrumentId, tempo) {
         unitTime,
         sectionLength,
       );
+    } else {
+      abcString += durationToRestStrings(
+        c[0].endTime,
+        ns.totalTime,
+        tempo,
+        unitTime,
+        sectionLength,
+      );
     }
   });
   abcString += "\n";

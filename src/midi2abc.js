@@ -205,6 +205,11 @@ function splitRestDurtion(duration) {
 function durationToRestString(startTime, endTime, unitTime) {
   if (startTime < endTime) {
     const duration = (endTime - startTime) * unitTime;
+    if (duration * 8 < 60) {
+      // abc.js does not support short rests less than z/8
+      console.log(`short rests (less than z/8) are ignored: ${duration}`);
+      return "";
+    }
     let abc = "";
     splitRestDurtion(duration).forEach((d) => {
       const [len1, len2] = calcKeyLength(d);

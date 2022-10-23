@@ -121,6 +121,11 @@ function calcKeyLength(duration) {
     console.error(`duration is negative: ${duration}`);
     return [null, null];
   }
+  if (duration * 8 < base) {
+    // abc.js does not support duration less than z/8.
+    console.log(`duration (less than z/8) are ignored: ${duration}`);
+    return "";
+  }
   let n = 2;
   if (duration > base) {
     // normal note
@@ -205,11 +210,6 @@ function splitRestDurtion(duration) {
 function durationToRestString(startTime, endTime, unitTime) {
   if (startTime < endTime) {
     const duration = (endTime - startTime) * unitTime;
-    if (duration * 8 < 60) {
-      // abc.js does not support short rests less than z/8
-      console.log(`short rests (less than z/8) are ignored: ${duration}`);
-      return "";
-    }
     let abc = "";
     splitRestDurtion(duration).forEach((d) => {
       const [len1, len2] = calcKeyLength(d);

@@ -2,10 +2,7 @@ function noteToString(note, unitTime) {
   const keyString = noteToKeyString(note);
   const duration = (note.endTime - note.startTime) * unitTime;
   const [len1, len2] = calcKeyLength(duration);
-  if (len2 == null) {
-    console.error(note);
-    return "";
-  }
+  if (len2 == null) return "";
   const tie = (note.tie) ? "-" : "";
   return len1 + keyString + len2 + tie;
 }
@@ -21,10 +18,7 @@ function chordNoteToString(chordNote, unitTime) {
     const n = chordNote[0];
     const duration = (n.endTime - n.startTime) * unitTime;
     const [len1, len2] = calcKeyLength(duration);
-    if (len2 == null) {
-      console.error(chordNote);
-      return "";
-    }
+    if (len2 == null) return "";
     return len1 + `[${str}]` + len2;
   }
 }
@@ -124,7 +118,7 @@ function calcKeyLength(duration) {
   if (duration * 8 < base) {
     // abc.js does not support duration less than z/8.
     console.log(`duration (less than z/8) are ignored: ${duration}`);
-    return "";
+    return [null, null];
   }
   let n = 2;
   if (duration > base) {

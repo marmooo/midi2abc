@@ -117,7 +117,7 @@ function calcKeyLength(duration) {
   }
   if (duration * 16 < base) {
     // abc.js does not support duration less than z/8.
-    console.log(`duration (less than z/8) are ignored: ${duration}`);
+    console.log(`duration (less than z/8) is ignored: ${duration}`);
     return [null, null];
   }
   let n = 2;
@@ -147,8 +147,13 @@ function calcKeyLength(duration) {
         }
       }
     }
-    console.error(duration, n);
-    return ["", `${n}`];
+    if (n == 1) {
+      console.log(`illegal duration is rounded: ${duration}, ""`);
+      return ["", ""];
+    } else {
+      console.log(`illegal duration is rounded: ${duration}, ${n}`);
+      return ["", `${n}`];
+    }
   } else {
     // normal note
     while (duration * n < base) n *= 2;
@@ -175,8 +180,13 @@ function calcKeyLength(duration) {
         }
       }
     }
-    console.error(duration, n);
-    return ["", `/${n}`];
+    if (n == 1) {
+      console.log(`illegal duration is rounded: ${duration}, ""`);
+      return ["", ""];
+    } else {
+      console.log(`illegal duration is rounded: ${duration}, "/${n}"`);
+      return ["", `/${n}`];
+    }
   }
 }
 

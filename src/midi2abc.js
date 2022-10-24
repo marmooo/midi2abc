@@ -115,7 +115,7 @@ function calcKeyLength(duration) {
     console.error(`duration is negative: ${duration}`);
     return [null, null];
   }
-  if (duration * 8 < base) {
+  if (duration * 16 < base) {
     // abc.js does not support duration less than z/8.
     console.log(`duration (less than z/8) are ignored: ${duration}`);
     return [null, null];

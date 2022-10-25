@@ -520,7 +520,6 @@ function segmentToString(ns, ins, instrumentId, tempo) {
       );
     }
   });
-  abcString += "\n";
   return abcString;
 }
 

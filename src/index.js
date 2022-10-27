@@ -92,6 +92,7 @@ class CursorControl {
 }
 
 function initScore(abcString) {
+  if (synthControl) synthControl.pause();
   const score = document.getElementById("score");
   const player = document.getElementById("player");
   const visualOptions = { responsive: "resize" };
@@ -106,7 +107,7 @@ function initScore(abcString) {
       displayWarp: true,
       displayClock: true,
     };
-    const synthControl = new ABCJS.synth.SynthController();
+    synthControl = new ABCJS.synth.SynthController();
     synthControl.load("#player", cursorControl, controlOptions);
     const midiBuffer = new ABCJS.synth.CreateSynth();
     midiBuffer.init({
@@ -144,6 +145,7 @@ async function convertFromUrl(midiUrl) {
 }
 
 loadConfig();
+let synthControl;
 convertFromUrl("cooleys.mid");
 
 document.getElementById("toggleDarkMode").onclick = toggleDarkMode;

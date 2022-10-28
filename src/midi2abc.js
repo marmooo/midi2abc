@@ -519,6 +519,9 @@ function segmentToString(ns, ins, instrumentId, tempo) {
         unitTime,
         sectionLength,
       );
+      if (!abcString.endsWith("\n")) {
+        abcString += "\n";
+      }
     }
   });
   return abcString;

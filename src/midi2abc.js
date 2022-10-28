@@ -163,7 +163,6 @@ function calcKeyLength(duration) {
     for (let p = 2; p <= 128; p *= 2) {
       const q = 2 * p - 1;
       const k = n * q / p;
-      console.log(duration * k);
       if (round(duration * k, 1e6) == base) {
         if (k == Math.round(k)) {
           return ["", `${k}`];

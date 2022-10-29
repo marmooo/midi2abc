@@ -127,17 +127,26 @@ function calcKeyLength(duration) {
     if (duration / n == base) return ["", `${n}`];
     // dotted note
     n /= 2;
-    for (let p = 2; p <= 128; p *= 2) {
+    let nearestDiff = duration / n - base;
+    let nearestNumerator = n;
+    let nearestDenominator = 1;
+    for (let p = 2; p <= 16; p *= 2) {
       const q = 2 * p - 1;
       const k = n * q / p;
-      if (round(duration / k, 1e6) == base) {
+      const diff = Math.abs(round(duration / k, 1e6) - base);
+      if (diff == 0) {
         if (k == Math.round(k)) {
           return ["", `${k}`];
         } else {
           return ["", `${n * q}/${p}`];
         }
+      } else if (diff < nearestDiff) {
+        nearestDiff = diff;
+        nearestNumerator = n * q;
+        nearestDenominator = p;
       }
     }
+    // tuplet
     n *= 2;
     for (let i = 3; i <= 9; i++) {
       for (let j = 1; j <= i - 1; j++) {
@@ -147,28 +156,32 @@ function calcKeyLength(duration) {
         }
       }
     }
-    if (n == 1) {
-      console.log(`illegal duration is rounded: ${duration}, ""`);
-      return ["", ""];
-    } else {
-      console.log(`illegal duration is rounded: ${duration}, ${n}`);
-      return ["", `${n}`];
-    }
+    // TODO: 330 --> 60x4 + 90
+    const length = `${nearestNumerator}/${nearestDenominator}`;
+    console.log(`illegal duration is rounded: ${duration}, ${length}`);
+    return ["", length];
   } else {
     // normal note
     while (duration * n < base) n *= 2;
     if (duration * n == base) return ["", `/${n}`];
     // dotted note
-    n /= 2;
-    for (let p = 2; p <= 128; p *= 2) {
+    let nearestDiff = duration * n - base;
+    let nearestNumerator = 1;
+    let nearestDenominator = n;
+    for (let p = 2; p <= 16; p *= 2) {
       const q = 2 * p - 1;
-      const k = n * q / p;
-      if (round(duration * k, 1e6) == base) {
+      const k = q / (n * p);
+      const diff = Math.abs(round(duration / k, 1e6) - base);
+      if (diff == 0) {
         if (k == Math.round(k)) {
           return ["", `${k}`];
         } else {
-          return ["", `${p}/${q * n}`];
+          return ["", `${q}/${n * p}`];
         }
+      } else if (diff < nearestDiff) {
+        nearestDiff = diff;
+        nearestNumerator = q;
+        nearestDenominator = n * p;
       }
     }
     // tuplet
@@ -181,13 +194,9 @@ function calcKeyLength(duration) {
         }
       }
     }
-    if (n == 1) {
-      console.log(`illegal duration is rounded: ${duration}, ""`);
-      return ["", ""];
-    } else {
-      console.log(`illegal duration is rounded: ${duration}, "/${n}"`);
-      return ["", `/${n}`];
-    }
+    const length = `${nearestNumerator}/${nearestDenominator}`;
+    console.log(`illegal duration is rounded: ${duration}, ${length}`);
+    return ["", length];
   }
 }
 

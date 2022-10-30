@@ -1,24 +1,48 @@
-function noteToString(note, unitTime) {
-  const keyString = noteToKeyString(note);
-  const duration = (note.endTime - note.startTime) * unitTime;
-  const [len1, len2] = calcKeyLength(duration);
-  if (len2 == null) return "";
-  const tie = (note.tie) ? "-" : "";
-  return len1 + keyString + len2 + tie;
+function fixIllegalDuration(chord, nextChord, unitTime, keyLength) {
+  const error = keyLength.error;
+  if (error != 0) {
+    // 330 --> 60 x 4 + 90
+    if (keyLength.numerator / keyLength.denominator > 4) {
+      let abcString = "";
+      const str = chord
+        .map((n) => cloneNote(n))
+        .map((n) => {
+          return noteToKeyString(n) + "-";
+        }).join("");
+      if (chord.length == 1) {
+        abcString += `${str}4`;
+      } else {
+        abcString += `[${str}]4`;
+      }
+      chord.forEach((n) => {
+        n.startTime += 240 / unitTime;
+      });
+      abcString += chordToString(chord, nextChord, unitTime);
+      return abcString;
+    } else if (nextChord) {
+      const diff = error / unitTime;
+      if (chord[0].endTime == nextChord[0].startTime) {
+        nextChord.forEach((n) => n.startTime -= diff);
+      }
+    }
+  }
 }
 
-function chordNoteToString(chordNote, unitTime) {
-  if (chordNote.length == 1) {
-    return noteToString(chordNote[0], unitTime);
+function chordToString(chord, nextChord, unitTime) {
+  const str = chord.map((note) => {
+    const tie = (note.tie) ? "-" : "";
+    return noteToKeyString(note) + tie;
+  }).join("");
+  const n = chord[0];
+  const duration = (n.endTime - n.startTime) * unitTime;
+  const keyLength = approximateKeyLength(duration);
+  if (keyLength.numerator == 0) return "";
+  const abc = fixIllegalDuration(chord, nextChord, unitTime, keyLength);
+  if (abc) return abc;
+  const [len1, len2] = calcKeyLength(keyLength);
+  if (chord.length == 1) {
+    return len1 + `${str}` + len2;
   } else {
-    const str = chordNote.map((note) => {
-      const tie = (note.tie) ? "-" : "";
-      return noteToKeyString(note, unitTime) + tie;
-    }).join("");
-    const n = chordNote[0];
-    const duration = (n.endTime - n.startTime) * unitTime;
-    const [len1, len2] = calcKeyLength(duration);
-    if (len2 == null) return "";
     return len1 + `[${str}]` + len2;
   }
 }
@@ -107,24 +131,53 @@ function splitInstruments(notes) {
   return result;
 }
 
-function calcKeyLength(duration) {
+class KeyLength {
+  constructor(numerator, denominator, factor, error) {
+    this.numerator = numerator;
+    this.denominator = denominator;
+    this.factor = factor;
+    this.error = error;
+  }
+}
+
+function calcKeyLength(keyLength) {
+  const n = keyLength.numerator;
+  const d = keyLength.denominator;
+  const f = keyLength.factor;
+  if (n == 0) return [null, null];
+  if (d == 1) {
+    if (n == 1) return ["", ""];
+    return ["", `${n}`];
+  }
+  if (f == 0) {
+    if (n == 1) return ["", `/${d}`];
+    return ["", `${n}/${d}`];
+  }
+  if (f > 0) {
+    return [`(${d}:${n}`, `/${f}`];
+  } else {
+    return [`(${d}:${n}`, `${-f}`];
+  }
+}
+
+function approximateKeyLength(duration) {
   const base = 60;
   duration = Math.round(duration * 1e6) / 1e6;
-  if (duration == base) return ["", ""];
+  if (duration == base) return new KeyLength(1, 1, 0, 0);
   if (duration <= 0) {
     console.error(`duration is negative: ${duration}`);
-    return [null, null];
+    return new KeyLength(0, 0, 0, duration);
   }
   if (duration * 16 < base) {
     // abc.js does not support duration less than z/8.
     console.log(`duration (less than z/8) is ignored: ${duration}`);
-    return [null, null];
+    return new KeyLength(0, 0, 0, duration);
   }
   let n = 2;
   if (duration > base) {
     // normal note
     while (duration / n > base) n *= 2;
-    if (duration / n == base) return ["", `${n}`];
+    if (duration / n == base) return new KeyLength(n, 1, 0, 0);
     // dotted note
     n /= 2;
     let nearestDiff = duration / n - base;
@@ -136,9 +189,9 @@ function calcKeyLength(duration) {
       const diff = Math.abs(round(duration / k, 1e6) - base);
       if (diff == 0) {
         if (k == Math.round(k)) {
-          return ["", `${k}`];
+          return new KeyLength(k, 1, 0, 0);
         } else {
-          return ["", `${n * q}/${p}`];
+          return new KeyLength(n * q, p, 0, 0);
         }
       } else if (diff < nearestDiff) {
         nearestDiff = diff;
@@ -153,19 +206,18 @@ function calcKeyLength(duration) {
     for (const i of [3, 5, 7]) {
       for (let j = 1; j <= i - 1; j++) {
         if (duration / n * i / j == base) {
-          if (n == 1) return [`(${i}:${j}`, ""];
-          return [`(${i}:${j}`, `${n}`];
+          return new KeyLength(j, i, n, 0);
         }
       }
     }
-    // TODO: 330 --> 60x4 + 90
     const length = `${nearestNumerator}/${nearestDenominator}`;
     console.log(`illegal duration is rounded: ${duration}, ${length}`);
-    return ["", length];
+    const diff = duration - base * nearestNumerator / nearestDenominator;
+    return new KeyLength(nearestNumerator, nearestDenominator, 0, diff);
   } else {
     // normal note
     while (duration * n < base) n *= 2;
-    if (duration * n == base) return ["", `/${n}`];
+    if (duration * n == base) return new KeyLength(1, n, 0, 0);
     // dotted note
     let nearestDiff = duration * n - base;
     let nearestNumerator = 1;
@@ -176,9 +228,9 @@ function calcKeyLength(duration) {
       const diff = Math.abs(round(duration / k, 1e6) - base);
       if (diff == 0) {
         if (k == Math.round(k)) {
-          return ["", `${k}`];
+          return new KeyLength(k, 1, 0, 0);
         } else {
-          return ["", `${q}/${n * p}`];
+          return new KeyLength(q, n * p, 0, 0);
         }
       } else if (diff < nearestDiff) {
         nearestDiff = diff;
@@ -193,14 +245,14 @@ function calcKeyLength(duration) {
     for (const i of [3, 5, 7]) {
       for (let j = 1; j <= i - 1; j++) {
         if (duration / n * i / j == base) {
-          if (n == 1) return [`(${i}:${j}`, ""];
-          return [`(${i}:${j}`, `/${n}`];
+          return new KeyLength(j, i, -n, 0);
         }
       }
     }
     const length = `${nearestNumerator}/${nearestDenominator}`;
     console.log(`illegal duration is rounded: ${duration}, ${length}`);
-    return ["", length];
+    const diff = duration - base * nearestNumerator / nearestDenominator;
+    return new KeyLength(nearestNumerator, nearestDenominator, 0, diff);
   }
 }
 
@@ -230,7 +282,8 @@ function durationToRestString(startTime, endTime, unitTime) {
     const duration = (endTime - startTime) * unitTime;
     let abc = "";
     splitRestDurtion(duration).forEach((d) => {
-      const [len1, len2] = calcKeyLength(d);
+      const keyLength = approximateKeyLength(d);
+      const [len1, len2] = calcKeyLength(keyLength);
       if (len2 == null) return "";
       abc += len1 + "z" + len2;
     });
@@ -275,11 +328,11 @@ function round(x, epsilon) {
   return Math.round(x * epsilon) / epsilon;
 }
 
-function chordNoteToTieString(c, unitTime, sectionLength, tempo) {
+function chordToTieString(c, nextChord, unitTime, sectionLength, tempo) {
   let abcString = "";
   const endTime = c[0].endTime;
   c.forEach((n) => n.endTime = sectionEnd);
-  abcString += chordNoteToString(c, unitTime);
+  abcString += chordToString(c, nextChord, unitTime);
   if (round(sectionEnd, 1e13) == round(endTime, 1e13)) {
     abcString += "|";
     if (section % 4 == 0) abcString += "\n";
@@ -297,7 +350,7 @@ function chordNoteToTieString(c, unitTime, sectionLength, tempo) {
         n.startTime = sectionEnd;
         n.endTime = nextSectionEnd;
       });
-      abcString += chordNoteToString(c, unitTime);
+      abcString += chordToString(c, nextChord, unitTime);
       if (round(nextSectionEnd, 1e13) == round(endTime, 1e13)) {
         abcString += "|";
         if (nextSection % 4 == 0) abcString += "\n";
@@ -315,7 +368,7 @@ function chordNoteToTieString(c, unitTime, sectionLength, tempo) {
       n.startTime = sectionEnd;
       n.endTime = endTime;
     });
-    abcString += chordNoteToString(c, unitTime);
+    abcString += chordToString(c, nextChord, unitTime);
     section += 1;
     sectionEnd = tempo.time + section * sectionLength;
     return abcString;
@@ -452,13 +505,13 @@ function getChord(ns) {
   return result;
 }
 
-function splitChord(chordNote, endTimes) {
+function splitChord(chord, endTimes) {
   const result = [];
   endTimes.forEach((endTime, i) => {
     if (i == 0) {
       const newChord = [];
-      const startTime = chordNote[0].startTime;
-      chordNote.forEach((n) => {
+      const startTime = chord[0].startTime;
+      chord.forEach((n) => {
         if (n.startTime <= startTime) {
           const newNote = cloneNote(n);
           newNote.endTime = endTime;
@@ -472,7 +525,7 @@ function splitChord(chordNote, endTimes) {
     } else {
       const startTime = endTimes[i - 1];
       const newChord = [];
-      chordNote.forEach((n) => {
+      chord.forEach((n) => {
         if (n.startTime <= startTime && endTime <= n.endTime) {
           const newNote = cloneNote(n);
           newNote.startTime = startTime;
@@ -512,9 +565,9 @@ function segmentToString(ns, ins, instrumentId, tempo) {
       );
     }
     if (round(sectionEnd, 1e13) < round(c[0].endTime, 1e13)) {
-      abcString += chordNoteToTieString(c, unitTime, sectionLength, tempo);
+      abcString += chordToTieString(c, nextC, unitTime, sectionLength, tempo);
     } else {
-      abcString += chordNoteToString(c, unitTime);
+      abcString += chordToString(c, nextC, unitTime);
     }
     if (nextC) {
       abcString += durationToRestStrings(

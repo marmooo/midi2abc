@@ -147,8 +147,10 @@ function calcKeyLength(duration) {
       }
     }
     // tuplet
+    // - prime number only (consider speed)
+    // - max denominator is 9 (limitation of abc.js)
     n *= 2;
-    for (let i = 3; i <= 9; i++) {
+    for (const i of [3, 5, 7]) {
       for (let j = 1; j <= i - 1; j++) {
         if (duration / n * i / j == base) {
           if (n == 1) return [`(${i}:${j}`, ""];
@@ -185,8 +187,10 @@ function calcKeyLength(duration) {
       }
     }
     // tuplet
+    // - prime number only (consider speed)
+    // - max denominator is 9 (limitation of abc.js)
     n /= 2;
-    for (let i = 3; i <= 9; i++) {
+    for (const i of [3, 5, 7]) {
       for (let j = 1; j <= i - 1; j++) {
         if (duration / n * i / j == base) {
           if (n == 1) return [`(${i}:${j}`, ""];

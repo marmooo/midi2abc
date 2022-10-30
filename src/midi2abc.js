@@ -147,7 +147,7 @@ function calcKeyLength(duration) {
       }
     }
     // tuplet
-    // - prime number only (consider speed)
+    // - prime numbers only (consider speed)
     // - max denominator is 9 (limitation of abc.js)
     n *= 2;
     for (const i of [3, 5, 7]) {
@@ -187,7 +187,7 @@ function calcKeyLength(duration) {
       }
     }
     // tuplet
-    // - prime number only (consider speed)
+    // - prime numbers only (consider speed)
     // - max denominator is 9 (limitation of abc.js)
     n /= 2;
     for (const i of [3, 5, 7]) {

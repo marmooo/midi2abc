@@ -1,22 +1,19 @@
 function fixIllegalDuration(chord, nextChord, unitTime, keyLength) {
   const error = keyLength.error;
   if (error != 0) {
+    let abcString = "";
     // 330 --> 60 x 4 + 90
     if (keyLength.numerator / keyLength.denominator > 4) {
-      let abcString = "";
       const str = chord
         .map((n) => cloneNote(n))
-        .map((n) => {
-          return noteToKeyString(n) + "-";
-        }).join("");
+        .map((n) => noteToKeyString(n) + "-")
+        .join("");
       if (chord.length == 1) {
         abcString += `${str}4`;
       } else {
         abcString += `[${str}]4`;
       }
-      chord.forEach((n) => {
-        n.startTime += 240 / unitTime;
-      });
+      chord.forEach((n) => n.startTime += 240 / unitTime);
       abcString += chordToString(chord, nextChord, unitTime);
       return abcString;
     } else if (nextChord) {
@@ -24,6 +21,9 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength) {
       if (chord[0].endTime == nextChord[0].startTime) {
         nextChord.forEach((n) => n.startTime -= diff);
       }
+      chord.forEach((n) => n.endTime -= diff);
+      abcString += chordToString(chord, nextChord, unitTime);
+      return abcString;
     }
   }
 }

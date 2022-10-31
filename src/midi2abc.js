@@ -29,7 +29,9 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       });
       abcString += chordToString(chord, nextChord, unitTime);
       duration = round(duration, 1e6);
-      console.log(`illegal duration is rounded: ${duration}, ${error}, ${abcString}`);
+      console.log(
+        `illegal duration is rounded: ${duration}, ${error}, ${abcString}`,
+      );
       return abcString;
     } else if (nextChord) {
       const diff = error / unitTime;
@@ -39,7 +41,9 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       chord.forEach((n) => n.endTime -= diff);
       abcString += chordToString(chord, nextChord, unitTime);
       duration = round(duration, 1e6);
-      console.log(`illegal duration is rounded: ${duration}, ${error}, ${abcString}`);
+      console.log(
+        `illegal duration is rounded: ${duration}, ${error}, ${abcString}`,
+      );
       return abcString;
     }
   }
@@ -51,7 +55,13 @@ function noteToString(chord, nextChord, unitTime) {
   const duration = (note.endTime - note.startTime) * unitTime;
   const keyLength = approximateKeyLength(duration);
   if (keyLength.numerator == 0) return "";
-  const abc = fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration);
+  const abc = fixIllegalDuration(
+    chord,
+    nextChord,
+    unitTime,
+    keyLength,
+    duration,
+  );
   if (abc) return abc;
   const [len1, len2] = calcKeyLength(keyLength);
   const tie = (note.tie) ? "-" : "";
@@ -62,15 +72,27 @@ function chordToString(chord, nextChord, unitTime) {
   if (chord.length == 1) {
     return noteToString(chord, nextChord, unitTime);
   } else {
-    const str = chord.map((note) => {
-      const tie = (note.tie) ? "-" : "";
-      return noteToKeyString(note) + tie;
-    }).join("");
+    const str = chord
+      .sort((a, b) => {
+        if (a == b) return 0;
+        if (a) return -1;
+        return 1;
+      })
+      .map((note) => {
+        const tie = (note.tie) ? "-" : "";
+        return noteToKeyString(note) + tie;
+      }).join("");
     const n = chord[0];
     const duration = (n.endTime - n.startTime) * unitTime;
     const keyLength = approximateKeyLength(duration);
     if (keyLength.numerator == 0) return "";
-    const abc = fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration);
+    const abc = fixIllegalDuration(
+      chord,
+      nextChord,
+      unitTime,
+      keyLength,
+      duration,
+    );
     if (abc) return abc;
     const [len1, len2] = calcKeyLength(keyLength);
     return len1 + `[${str}]` + len2;

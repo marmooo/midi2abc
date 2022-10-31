@@ -3,23 +3,16 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
   if (error != 0) {
     let abcString = "";
     if (keyLength.numerator / keyLength.denominator > 1) {
-      // 330 --> 60 x 5 + 30, 150 --> 60 x 2 + 30, 195 --> 60 x 3 + 15
       const base = 60;
-      const n = Math.floor(duration / 60);
       const tie = chord[0].tie;
       const endTime = chord[0].endTime;
-      const t = chord[0].startTime + base * n / unitTime;
-      const str = chord
-        .map((note) => {
-          note.endTime = t;
-          note.tie = true;
-          return noteToKeyString(note) + "-";
-        }).join("");
-      if (chord.length == 1) {
-        abcString += (n == 1) ? `${str}` : `${str}${n}`;
-      } else {
-        abcString += (n == 1) ? `[${str}]` : `[${str}]${n}`;
-      }
+      const t = chord[0].startTime +
+        base * keyLength.numerator / keyLength.denominator / unitTime;
+      chord.forEach((note) => {
+        note.endTime = t;
+        note.tie = true;
+      });
+      abcString += chordToString(chord, nextChord, unitTime);
       chord.forEach((note) => {
         note.startTime = t;
         note.endTime = endTime;
@@ -236,14 +229,14 @@ function approximateKeyLength(duration) {
     for (let p = 2; p <= 16; p *= 2) {
       const q = 2 * p - 1;
       const k = n * q / p;
-      const diff = Math.abs(round(duration / k, 1e6) - base);
+      const diff = round(duration / k, 1e6) - base;
       if (diff == 0) {
         if (k == Math.round(k)) {
           return new KeyLength(k, 1, 0, 0);
         } else {
           return new KeyLength(n * q, p, 0, 0);
         }
-      } else if (diff < nearestDiff) {
+      } else if (0 < diff && diff < nearestDiff) {
         nearestDiff = diff;
         nearestNumerator = n * q;
         nearestDenominator = p;

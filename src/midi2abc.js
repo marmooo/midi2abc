@@ -8,11 +8,13 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       let n = 2;
       while (duration / n > base) n *= 2;
       n /= 2;
+      const tie = chord[0].tie;
       const endTime = chord[0].endTime;
       const t = chord[0].startTime + base * n / unitTime;
       const str = chord
         .map((note) => {
           note.endTime = t;
+          note.tie = true;
           return noteToKeyString(note) + "-";
         }).join("");
       if (chord.length == 1) {
@@ -23,6 +25,7 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       chord.forEach((note) => {
         note.startTime = t;
         note.endTime = endTime;
+        note.tie = tie;
       });
       abcString += chordToString(chord, nextChord, unitTime);
       return abcString;

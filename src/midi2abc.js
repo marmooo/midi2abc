@@ -1,19 +1,29 @@
-function fixIllegalDuration(chord, nextChord, unitTime, keyLength) {
+function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
   const error = keyLength.error;
   if (error != 0) {
     let abcString = "";
-    // 330 --> 60 x 4 + 90
-    if (keyLength.numerator / keyLength.denominator > 4) {
+    if (keyLength.numerator / keyLength.denominator > 1) {
+      // 330 --> 240 + 90, 150 --> 120 + 30
+      const base = 60;
+      let n = 2;
+      while (duration / n > base) n *= 2;
+      n /= 2;
+      const endTime = chord[0].endTime;
+      const t = chord[0].startTime + base * n / unitTime;
       const str = chord
-        .map((n) => cloneNote(n))
-        .map((n) => noteToKeyString(n) + "-")
-        .join("");
+        .map((note) => {
+          note.endTime = t;
+          return noteToKeyString(note) + "-";
+        }).join("");
       if (chord.length == 1) {
-        abcString += `${str}4`;
+        abcString += `${str}${n}`;
       } else {
-        abcString += `[${str}]4`;
+        abcString += `[${str}]${n}`;
       }
-      chord.forEach((n) => n.startTime += 240 / unitTime);
+      chord.forEach((note) => {
+        note.startTime = t;
+        note.endTime = endTime;
+      });
       abcString += chordToString(chord, nextChord, unitTime);
       return abcString;
     } else if (nextChord) {
@@ -37,7 +47,7 @@ function chordToString(chord, nextChord, unitTime) {
   const duration = (n.endTime - n.startTime) * unitTime;
   const keyLength = approximateKeyLength(duration);
   if (keyLength.numerator == 0) return "";
-  const abc = fixIllegalDuration(chord, nextChord, unitTime, keyLength);
+  const abc = fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration);
   if (abc) return abc;
   const [len1, len2] = calcKeyLength(keyLength);
   if (chord.length == 1) {

@@ -41,21 +41,34 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
   }
 }
 
-function chordToString(chord, nextChord, unitTime) {
-  const str = chord.map((note) => {
-    const tie = (note.tie) ? "-" : "";
-    return noteToKeyString(note) + tie;
-  }).join("");
-  const n = chord[0];
-  const duration = (n.endTime - n.startTime) * unitTime;
+function noteToString(chord, nextChord, unitTime) {
+  const note = chord[0];
+  const keyString = noteToKeyString(note);
+  const duration = (note.endTime - note.startTime) * unitTime;
   const keyLength = approximateKeyLength(duration);
   if (keyLength.numerator == 0) return "";
   const abc = fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration);
   if (abc) return abc;
   const [len1, len2] = calcKeyLength(keyLength);
+  const tie = (note.tie) ? "-" : "";
+  return len1 + keyString + len2 + tie;
+}
+
+function chordToString(chord, nextChord, unitTime) {
   if (chord.length == 1) {
-    return len1 + `${str}` + len2;
+    return noteToString(chord, nextChord, unitTime);
   } else {
+    const str = chord.map((note) => {
+      const tie = (note.tie) ? "-" : "";
+      return noteToKeyString(note) + tie;
+    }).join("");
+    const n = chord[0];
+    const duration = (n.endTime - n.startTime) * unitTime;
+    const keyLength = approximateKeyLength(duration);
+    if (keyLength.numerator == 0) return "";
+    const abc = fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration);
+    if (abc) return abc;
+    const [len1, len2] = calcKeyLength(keyLength);
     return len1 + `[${str}]` + len2;
   }
 }

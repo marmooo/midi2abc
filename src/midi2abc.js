@@ -28,6 +28,8 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
         note.tie = tie;
       });
       abcString += chordToString(chord, nextChord, unitTime);
+      duration = round(duration, 1e6);
+      console.log(`illegal duration is rounded: ${duration}, ${error}, ${abcString}`);
       return abcString;
     } else if (nextChord) {
       const diff = error / unitTime;
@@ -36,6 +38,8 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       }
       chord.forEach((n) => n.endTime -= diff);
       abcString += chordToString(chord, nextChord, unitTime);
+      duration = round(duration, 1e6);
+      console.log(`illegal duration is rounded: ${duration}, ${error}, ${abcString}`);
       return abcString;
     }
   }
@@ -236,8 +240,6 @@ function approximateKeyLength(duration) {
         }
       }
     }
-    const length = `${nearestNumerator}/${nearestDenominator}`;
-    console.log(`illegal duration is rounded: ${duration}, ${length}`);
     const diff = duration - base * nearestNumerator / nearestDenominator;
     return new KeyLength(nearestNumerator, nearestDenominator, 0, diff);
   } else {
@@ -275,8 +277,6 @@ function approximateKeyLength(duration) {
         }
       }
     }
-    const length = `${nearestNumerator}/${nearestDenominator}`;
-    console.log(`illegal duration is rounded: ${duration}, ${length}`);
     const diff = duration - base * nearestNumerator / nearestDenominator;
     return new KeyLength(nearestNumerator, nearestDenominator, 0, diff);
   }

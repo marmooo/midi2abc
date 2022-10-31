@@ -18,9 +18,9 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
           return noteToKeyString(note) + "-";
         }).join("");
       if (chord.length == 1) {
-        abcString += `${str}${n}`;
+        abcString += (n == 1) ? `${str}` : `${str}${n}`;
       } else {
-        abcString += `[${str}]${n}`;
+        abcString += (n == 1) ? `[${str}]` : `[${str}]${n}`;
       }
       chord.forEach((note) => {
         note.startTime = t;

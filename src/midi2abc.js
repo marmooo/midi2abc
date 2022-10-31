@@ -371,15 +371,18 @@ function chordToTieString(c, nextChord, unitTime, sectionLength, tempo) {
   let abcString = "";
   const endTime = c[0].endTime;
   c.forEach((n) => n.endTime = sectionEnd);
-  abcString += chordToString(c, nextChord, unitTime);
   if (round(sectionEnd, 1e13) == round(endTime, 1e13)) {
+    c.forEach((n) => n.tie = false);
+    abcString += chordToString(c, nextChord, unitTime);
     abcString += "|";
     if (section % 4 == 0) abcString += "\n";
     section += 1;
     sectionEnd = tempo.time + section * sectionLength;
     return abcString;
   } else {
-    abcString += "-|";
+    c.forEach((n) => n.tie = true);
+    abcString += chordToString(c, nextChord, unitTime);
+    abcString += "|";
     const count = Math.floor((endTime - c[0].startTime) / sectionLength);
     if (section % 4 == 0) abcString += "\n";
     for (let i = 1; i < count; i++) {
@@ -389,15 +392,18 @@ function chordToTieString(c, nextChord, unitTime, sectionLength, tempo) {
         n.startTime = sectionEnd;
         n.endTime = nextSectionEnd;
       });
-      abcString += chordToString(c, nextChord, unitTime);
       if (round(nextSectionEnd, 1e13) == round(endTime, 1e13)) {
+        c.forEach((n) => n.tie = false);
+        abcString += chordToString(c, nextChord, unitTime);
         abcString += "|";
         if (nextSection % 4 == 0) abcString += "\n";
         section = nextSection;
         sectionEnd = nextSectionEnd;
         return abcString;
       } else {
-        abcString += "-|";
+        c.forEach((n) => n.tie = true);
+        abcString += chordToString(c, nextChord, unitTime);
+        abcString += "|";
         if (nextSection % 4 == 0) abcString += "\n";
         section = nextSection;
         sectionEnd = nextSectionEnd;
@@ -406,6 +412,7 @@ function chordToTieString(c, nextChord, unitTime, sectionLength, tempo) {
     c.forEach((n) => {
       n.startTime = sectionEnd;
       n.endTime = endTime;
+      n.tie = false;
     });
     abcString += chordToString(c, nextChord, unitTime);
     section += 1;

@@ -211,7 +211,7 @@ function approximateKeyLength(duration) {
     console.error(`duration is negative: ${duration}`);
     return new KeyLength(0, 0, 0, duration);
   }
-  if (duration * 16 < base) {
+  if (duration * 8 < base) {
     // abc.js does not support duration less than z/8.
     console.log(`duration (less than z/8) is ignored: ${duration}`);
     return new KeyLength(0, 0, 0, duration);

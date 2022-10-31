@@ -3,11 +3,9 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
   if (error != 0) {
     let abcString = "";
     if (keyLength.numerator / keyLength.denominator > 1) {
-      // 330 --> 240 + 90, 150 --> 120 + 30
+      // 330 --> 60 x 5 + 30, 150 --> 60 x 2 + 30, 195 --> 60 x 3 + 15
       const base = 60;
-      let n = 2;
-      while (duration / n > base) n *= 2;
-      n /= 2;
+      const n = Math.floor(duration / 60);
       const tie = chord[0].tie;
       const endTime = chord[0].endTime;
       const t = chord[0].startTime + base * n / unitTime;

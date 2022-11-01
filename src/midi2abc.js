@@ -250,7 +250,7 @@ function approximateKeyLength(duration) {
       for (const i of [3, 5, 7]) {
         for (let j = 1; j <= i - 1; j++) {
           if (duration / n * i / j == base) {
-            return new KeyLength(j, i, n, 0);
+            return new KeyLength(j, i, -n, 0);
           }
         }
       }
@@ -288,7 +288,7 @@ function approximateKeyLength(duration) {
       for (const i of [3, 5, 7]) {
         for (let j = 1; j <= i - 1; j++) {
           if (duration * n * i / j == base) {
-            return new KeyLength(j, i, -n, 0);
+            return new KeyLength(j, i, n, 0);
           }
         }
       }

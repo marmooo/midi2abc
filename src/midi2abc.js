@@ -245,11 +245,12 @@ function approximateKeyLength(duration) {
     // tuplet
     // - prime numbers only (consider speed)
     // - max denominator is 9 (limitation of abc.js)
-    n *= 2;
-    for (const i of [3, 5, 7]) {
-      for (let j = 1; j <= i - 1; j++) {
-        if (duration / n * i / j == base) {
-          return new KeyLength(j, i, n, 0);
+    for (; n >= 1; n /= 2) {
+      for (const i of [3, 5, 7]) {
+        for (let j = 1; j <= i - 1; j++) {
+          if (duration / n * i / j == base) {
+            return new KeyLength(j, i, n, 0);
+          }
         }
       }
     }
@@ -282,11 +283,12 @@ function approximateKeyLength(duration) {
     // tuplet
     // - prime numbers only (consider speed)
     // - max denominator is 9 (limitation of abc.js)
-    n /= 2;
-    for (const i of [3, 5, 7]) {
-      for (let j = 1; j <= i - 1; j++) {
-        if (duration / n * i / j == base) {
-          return new KeyLength(j, i, -n, 0);
+    for (; n >= 1; n /= 2) {
+      for (const i of [3, 5, 7]) {
+        for (let j = 1; j <= i - 1; j++) {
+          if (duration / n * i / j == base) {
+            return new KeyLength(j, i, -n, 0);
+          }
         }
       }
     }

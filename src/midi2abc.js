@@ -4,7 +4,6 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
     let abcString = "";
     if (keyLength.numerator / keyLength.denominator > 1) {
       const base = 60;
-      const tie = chord[0].tie;
       const startTime = chord[0].startTime;
       const endTime = chord[0].endTime;
       const newDuration = base * keyLength.numerator / keyLength.denominator /
@@ -13,21 +12,16 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       chord.forEach((note) => {
         note.startTime = t;
         note.endTime = endTime;
-        note.tie = tie;
       });
       const abc2 = chordToString(chord, nextChord, unitTime);
+      chord.forEach((note) => {
+        note.startTime = startTime;
+        note.endTime = t;
+      });
       if (abc2 == "") {
-        chord.forEach((note) => {
-          note.startTime = startTime;
-          note.endTime = t;
-          note.tie = false;
-        });
+        chord.forEach((note) => note.tie = false);
       } else {
-        chord.forEach((note) => {
-          note.startTime = startTime;
-          note.endTime = t;
-          note.tie = true;
-        });
+        chord.forEach((note) => note.tie = true);
       }
       const abc1 = chordToString(chord, nextChord, unitTime);
       duration = round(duration, 1e6);

@@ -5,25 +5,36 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
     if (keyLength.numerator / keyLength.denominator > 1) {
       const base = 60;
       const tie = chord[0].tie;
+      const startTime = chord[0].startTime;
       const endTime = chord[0].endTime;
-      const t = chord[0].startTime +
-        base * keyLength.numerator / keyLength.denominator / unitTime;
-      chord.forEach((note) => {
-        note.endTime = t;
-        note.tie = true;
-      });
-      abcString += chordToString(chord, nextChord, unitTime);
+      const newDuration = base * keyLength.numerator / keyLength.denominator /
+        unitTime;
+      const t = chord[0].startTime + newDuration;
       chord.forEach((note) => {
         note.startTime = t;
         note.endTime = endTime;
         note.tie = tie;
       });
-      abcString += chordToString(chord, nextChord, unitTime);
+      const abc2 = chordToString(chord, nextChord, unitTime);
+      if (abc2 == "") {
+        chord.forEach((note) => {
+          note.startTime = startTime;
+          note.endTime = t;
+          note.tie = false;
+        });
+      } else {
+        chord.forEach((note) => {
+          note.startTime = startTime;
+          note.endTime = t;
+          note.tie = true;
+        });
+      }
+      const abc1 = chordToString(chord, nextChord, unitTime);
       duration = round(duration, 1e6);
       console.log(
         `illegal duration is rounded: ${duration}, ${error}, ${abcString}`,
       );
-      return abcString;
+      return abc1 + abc2;
     } else if (nextChord) {
       const diff = error / unitTime;
       if (chord[0].endTime == nextChord[0].startTime) {

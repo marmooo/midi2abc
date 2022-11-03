@@ -40,6 +40,23 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
   }
 }
 
+function getTupletString(len1, keyLength) {
+  if (tupletCount == 0 && keyLength.factor != 0) {
+    tupletNum = keyLength.denominator;
+    tupletCount += 1;
+    return len1;
+  } else if (tupletCount < tupletNum) {
+    tupletCount += 1;
+    if (tupletCount == tupletNum) {
+      tupletCount = 0;
+      tupletNum = 0;
+    }
+    return "";
+  } else {
+    return "";
+  }
+}
+
 function noteToString(chord, nextChord, unitTime) {
   const note = chord[0];
   const keyString = noteToKeyString(note);
@@ -56,7 +73,8 @@ function noteToString(chord, nextChord, unitTime) {
   if (abc) return abc;
   const [len1, len2] = calcKeyLength(keyLength);
   const tie = (note.tie) ? "-" : "";
-  return len1 + keyString + len2 + tie;
+  const tupletString = getTupletString(len1, keyLength);
+  return tupletString + keyString + len2 + tie;
 }
 
 function chordToString(chord, nextChord, unitTime) {
@@ -86,7 +104,8 @@ function chordToString(chord, nextChord, unitTime) {
     );
     if (abc) return abc;
     const [len1, len2] = calcKeyLength(keyLength);
-    return len1 + `[${str}]` + len2;
+    const tupletString = getTupletString(len1, keyLength);
+    return tupletString + `[${str}]` + len2;
   }
 }
 
@@ -327,7 +346,8 @@ function durationToRestString(startTime, endTime, unitTime) {
       const keyLength = approximateKeyLength(d);
       const [len1, len2] = calcKeyLength(keyLength);
       if (len2 == null) return "";
-      abc += len1 + "z" + len2;
+      const tupletString = getTupletString(len1, keyLength);
+      abc += tupletString + "z" + len2;
     });
     return abc;
   } else {
@@ -656,6 +676,8 @@ V:${instrumentId + 1}
 `;
 }
 
+let tupletNum = 0;
+let tupletCount = 0;
 let section;
 let sectionEnd;
 export default function tone2abc(ns, options) {

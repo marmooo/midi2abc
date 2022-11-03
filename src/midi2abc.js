@@ -83,15 +83,10 @@ function noteToString(chord, nextChord, unitTime) {
 }
 
 function chordToString(chord, nextChord, unitTime) {
-  if (chord.length == 1) {
+  if (chord.length == 1 && !chord[0].tie) {
     return noteToString(chord, nextChord, unitTime);
   } else {
     const str = chord
-      .sort((a, b) => {
-        if (a == b) return 0;
-        if (a) return -1;
-        return 1;
-      })
       .map((note) => {
         const tie = (note.tie) ? "-" : "";
         return noteToKeyString(note) + tie;
@@ -612,6 +607,13 @@ function splitChord(chord, endTimes) {
       });
       result.push(newChord);
     }
+  });
+  result.forEach((chord) => {
+    chord.sort((a, b) => {
+      if (a.tie == b.tie) return 0;
+      if (a.tie) return -1;
+      return 1;
+    })
   });
   return result;
 }

@@ -89,11 +89,10 @@ function chordToString(chord, nextChord, unitTime) {
   ) {
     return noteToString(chord, nextChord, unitTime);
   } else {
-    const str = chord
-      .map((note) => {
-        const tie = (note.tie) ? "-" : "";
-        return noteToKeyString(note) + tie;
-      }).join("");
+    const str = chord.map((note) => {
+      const tie = (note.tie) ? "-" : "";
+      return noteToKeyString(note) + tie;
+    }).join("");
     const n = chord[0];
     const duration = (n.endTime - n.startTime) * unitTime;
     const keyLength = approximateKeyLength(duration);
@@ -405,54 +404,54 @@ function round(x, epsilon) {
   return Math.round(x * epsilon) / epsilon;
 }
 
-function chordToTieString(c, nextChord, unitTime, sectionLength, tempo) {
+function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
   let abcString = "";
-  const endTime = c[0].endTime;
-  c.forEach((n) => n.endTime = sectionEnd);
+  const endTime = chord[0].endTime;
+  chord.forEach((note) => note.endTime = sectionEnd);
   if (round(sectionEnd, 1e13) == round(endTime, 1e13)) {
-    c.forEach((n) => n.tie = false);
-    abcString += chordToString(c, nextChord, unitTime);
+    chord.forEach((note) => note.tie = false);
+    abcString += chordToString(chord, nextChord, unitTime);
     abcString += "|";
     if (section % 4 == 0) abcString += "\n";
     section += 1;
     sectionEnd = tempo.time + section * sectionLength;
     return abcString;
   } else {
-    c.forEach((n) => n.tie = true);
-    abcString += chordToString(c, nextChord, unitTime);
+    chord.forEach((note) => note.tie = true);
+    abcString += chordToString(chord, nextChord, unitTime);
     abcString += "|";
-    const count = Math.floor((endTime - c[0].startTime) / sectionLength);
+    const count = Math.floor((endTime - chord[0].startTime) / sectionLength);
     if (section % 4 == 0) abcString += "\n";
     for (let i = 1; i < count; i++) {
       const nextSection = section + 1;
       const nextSectionEnd = tempo.time + nextSection * sectionLength;
-      c.forEach((n) => {
-        n.startTime = sectionEnd;
-        n.endTime = nextSectionEnd;
+      chord.forEach((note) => {
+        note.startTime = sectionEnd;
+        note.endTime = nextSectionEnd;
       });
       if (round(nextSectionEnd, 1e13) == round(endTime, 1e13)) {
-        c.forEach((n) => n.tie = false);
-        abcString += chordToString(c, nextChord, unitTime);
+        chord.forEach((note) => note.tie = false);
+        abcString += chordToString(chord, nextChord, unitTime);
         abcString += "|";
         if (nextSection % 4 == 0) abcString += "\n";
         section = nextSection;
         sectionEnd = nextSectionEnd;
         return abcString;
       } else {
-        c.forEach((n) => n.tie = true);
-        abcString += chordToString(c, nextChord, unitTime);
+        chord.forEach((note) => note.tie = true);
+        abcString += chordToString(chord, nextChord, unitTime);
         abcString += "|";
         if (nextSection % 4 == 0) abcString += "\n";
         section = nextSection;
         sectionEnd = nextSectionEnd;
       }
     }
-    c.forEach((n) => {
-      n.startTime = sectionEnd;
-      n.endTime = endTime;
-      n.tie = false;
+    chord.forEach((note) => {
+      note.startTime = sectionEnd;
+      note.endTime = endTime;
+      note.tie = false;
     });
-    abcString += chordToString(c, nextChord, unitTime);
+    abcString += chordToString(chord, nextChord, unitTime);
     section += 1;
     sectionEnd = tempo.time + section * sectionLength;
     return abcString;
@@ -650,42 +649,48 @@ function segmentToString(ns, ins, instrumentId, tempo) {
   sectionEnd = tempo.time + section * sectionLength;
   timeSignature = timeSignatures.shift();
 
-  const cs = getChord(ins);
-  cs.forEach((c, i) => {
+  const chords = getChord(ins);
+  chords.forEach((chord, i) => {
     // TODO: irregular meter
     // start point shifts with long notes
-    // if (timeSignature && c[0].startTime >= timeSignature.time) {
+    // if (timeSignature && chord[0].startTime >= timeSignature.time) {
     //   abcString += `\\\nM:${timeSignature.numerator}/${timeSignature.denominator}\n`;
     //   beat = timeSignature.numerator / timeSignature.denominator;
     //   sectionLength = 240 / tempo.qpm * beat;
     //   timeSignature = timeSignatures.shift();
     // }
-    const nextC = cs[i + 1];
-    if (i == 0 && c[0].startTime != tempo.time) {
+    const nextChord = chords[i + 1];
+    if (i == 0 && chord[0].startTime != tempo.time) {
       abcString += durationToRestStrings(
         tempo.time,
-        c[0].startTime,
+        chord[0].startTime,
         tempo,
         unitTime,
         sectionLength,
       );
     }
-    if (round(sectionEnd, 1e13) < round(c[0].endTime, 1e13)) {
-      abcString += chordToTieString(c, nextC, unitTime, sectionLength, tempo);
+    if (round(sectionEnd, 1e13) < round(chord[0].endTime, 1e13)) {
+      abcString += chordToTieString(
+        chord,
+        nextChord,
+        unitTime,
+        sectionLength,
+        tempo,
+      );
     } else {
-      abcString += chordToString(c, nextC, unitTime);
+      abcString += chordToString(chord, nextChord, unitTime);
     }
-    if (nextC) {
+    if (nextChord) {
       abcString += durationToRestStrings(
-        c[0].endTime,
-        nextC[0].startTime,
+        chord[0].endTime,
+        nextChord[0].startTime,
         tempo,
         unitTime,
         sectionLength,
       );
     } else {
       abcString += durationToRestStrings(
-        c[0].endTime,
+        chord[0].endTime,
         ns.totalTime,
         tempo,
         unitTime,
@@ -722,7 +727,6 @@ export default function tone2abc(ns, options) {
     if (options.composer) abcString += `C:${options.composer}\n`;
   }
   cleanupTime(ns);
-  console.log(splitTempos(ns.notes, ns.tempos).length);
   splitTempos(ns.notes, ns.tempos).forEach(([tns, tempo]) => {
     abcString += `Q:1/4=${Math.round(tempo.qpm)}\n`;
     splitInstruments(tns).forEach((ins, instrumentId) => {

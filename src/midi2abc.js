@@ -161,12 +161,12 @@ function cleanupTimeSignatures(timeSignatures) {
 }
 
 function cleanupTempos(tempos) {
-  const cleanedTempos = new Map();
+  const map = new Map();
   tempos.forEach((tempo) => {
-    cleanedTempos.set(tempo.time, tempo.qpm);
+    map.set(tempo.time, tempo.qpm);
   });
   const result = [];
-  for (const [time, qpm] of cleanedTempos) {
+  for (const [time, qpm] of map) {
     const tempo = { time: time, qpm: qpm };
     result.push(tempo);
   }

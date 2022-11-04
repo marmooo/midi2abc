@@ -227,6 +227,7 @@ function calcKeyLength(keyLength) {
     return ["", `${n}/${d}`];
   }
   if (f > 0) {
+    if (f == 1) return [`(${d}:${n}`, ""];
     return [`(${d}:${n}`, `/${f}`];
   } else {
     return [`(${d}:${n}`, `${-f}`];

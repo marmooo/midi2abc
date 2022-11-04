@@ -145,6 +145,18 @@ function noteToKeyString(note) {
   }
 }
 
+function cleanupTimeSignatures(timeSignatures) {
+  const map = new Map();
+  timeSignatures.forEach((timeSignature) => {
+    map.set(timeSignature.time, timeSignature);
+  });
+  const result = [];
+  for (const [_time, timeSignature] of map) {
+    result.push(timeSignature);
+  }
+  return result;
+}
+
 function cleanupTempos(tempos) {
   const cleanedTempos = new Map();
   tempos.forEach((tempo) => {
@@ -613,23 +625,38 @@ function splitChord(chord, endTimes) {
       if (a.tie == b.tie) return 0;
       if (a.tie) return -1;
       return 1;
-    })
+    });
   });
   return result;
 }
 
 function segmentToString(ns, ins, instrumentId, tempo) {
-  const beat = ns.timeSignatures[0].numerator /
-    ns.timeSignatures[0].denominator;
-  const unitLength = 2 ** Math.floor(1 / beat);
+  const timeSignatures = cleanupTimeSignatures(ns.timeSignatures);
+  let timeSignature = timeSignatures.shift();
+  const beat = timeSignature.numerator / timeSignature.denominator;
+  const unitLength = (beat < 0.75) ? 2 : 4;
   const unitTime = tempo.qpm * unitLength;
   const sectionLength = 240 / tempo.qpm * beat;
-  let abcString = setInstrumentHeader(ns, ins, instrumentId, unitLength);
+  let abcString = setInstrumentHeader(
+    ins,
+    instrumentId,
+    unitLength,
+    timeSignature,
+  );
   section = 1;
   sectionEnd = tempo.time + section * sectionLength;
+  timeSignature = timeSignatures.shift();
 
   const cs = getChord(ins);
   cs.forEach((c, i) => {
+    // TODO: irregular meter
+    // start point shifts with long notes
+    // if (timeSignature && c[0].startTime >= timeSignature.time) {
+    //   abcString += `\\\nM:${timeSignature.numerator}/${timeSignature.denominator}\n`;
+    //   beat = timeSignature.numerator / timeSignature.denominator;
+    //   sectionLength = 240 / tempo.qpm * beat;
+    //   timeSignature = timeSignatures.shift();
+    // }
     const nextC = cs[i + 1];
     if (i == 0 && c[0].startTime != tempo.time) {
       abcString += durationToRestStrings(
@@ -669,12 +696,9 @@ function segmentToString(ns, ins, instrumentId, tempo) {
   return abcString;
 }
 
-function setInstrumentHeader(ns, ins, instrumentId, unitLength) {
-  const sigs = ns.timeSignatures;
-  const id = (instrumentId <= sigs.length - 1) ? instrumentId : sigs.length - 1;
-  const sig = sigs[id];
-  const numerator = sig.numerator;
-  const denominator = sig.denominator;
+function setInstrumentHeader(ins, instrumentId, unitLength, timeSignature) {
+  const numerator = timeSignature.numerator;
+  const denominator = timeSignature.denominator;
   return `L:1/${4 * unitLength}
 M:${numerator}/${denominator}
 K:C clef=${guessClef(ins)}

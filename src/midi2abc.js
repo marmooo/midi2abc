@@ -528,6 +528,8 @@ function cloneNote(note) {
     pitch: note.pitch,
     velocity: note.pitch,
     isDrum: note.isDrum,
+    // tie
+    // splitted
   };
 }
 

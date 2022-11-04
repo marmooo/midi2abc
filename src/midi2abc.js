@@ -83,7 +83,10 @@ function noteToString(chord, nextChord, unitTime) {
 }
 
 function chordToString(chord, nextChord, unitTime) {
-  if (chord.length == 1 && !chord[0].tie) {
+  if (
+    chord.length == 1 &&
+    (chord[0].tie && nextChord && nextChord.length == 1)
+  ) {
     return noteToString(chord, nextChord, unitTime);
   } else {
     const str = chord

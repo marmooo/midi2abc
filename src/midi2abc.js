@@ -83,10 +83,7 @@ function noteToString(chord, nextChord, unitTime) {
 }
 
 function chordToString(chord, nextChord, unitTime) {
-  if (
-    chord.length == 1 &&
-    (chord[0].tie && nextChord && nextChord.length == 1)
-  ) {
+  if (chord.length == 1 && !chord[0].splitted) {
     return noteToString(chord, nextChord, unitTime);
   } else {
     const str = chord.map((note) => {
@@ -600,6 +597,7 @@ function splitChord(chord, endTimes) {
           newNote.endTime = endTime;
           if (endTime < n.endTime) {
             newNote.tie = true;
+            newNote.splitted = true;
           }
           newChord.push(newNote);
         }
@@ -615,6 +613,7 @@ function splitChord(chord, endTimes) {
           newNote.endTime = endTime;
           if (endTime < n.endTime) {
             newNote.tie = true;
+            newNote.splitted = true;
           }
           newChord.push(newNote);
         }

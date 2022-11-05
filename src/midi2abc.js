@@ -11,7 +11,6 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       const t = chord[0].startTime + newDuration;
       chord.forEach((note) => {
         note.startTime = t;
-        note.endTime = endTime;
       });
       const abc2 = chordToString(chord, nextChord, unitTime);
       chord.forEach((note) => {
@@ -23,7 +22,10 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       } else {
         chord.forEach((note) => note.tie = true);
       }
-      const abc1 = chordToString(chord, nextChord, unitTime);
+      const abc1 = chordToString(chord, null, unitTime);
+      chord.forEach((note) => {
+        note.endTime = endTime;
+      });
       duration = round(duration, 1e6);
       console.log(
         `illegal duration is rounded: ${duration}, ${error}, ${abcString}`,

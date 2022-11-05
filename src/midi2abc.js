@@ -635,6 +635,7 @@ function splitChord(chord, endTimes) {
 }
 
 function segmentToString(ns, ins, instrumentId, tempo) {
+  if (ins.length == 0) return "";
   const timeSignatures = cleanupTimeSignatures(ns.timeSignatures);
   let timeSignature = timeSignatures.shift();
   const beat = timeSignature.numerator / timeSignature.denominator;

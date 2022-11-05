@@ -580,6 +580,7 @@ function getChord(ns) {
         .map((n) => {
           const newNote = cloneNote(n);
           newNote.startTime = endTime;
+          newNote.splitted = true;
           return newNote;
         });
       ns = ns.slice(j);

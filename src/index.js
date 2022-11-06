@@ -134,6 +134,11 @@ function initScore(abcString) {
   }
 }
 
+function initABCEditor() {
+  const editor = document.getElementById("abc");
+  editor.setAttribute("autocorrect", "off");
+}
+
 function updateScore() {
   const editor = document.getElementById("abc");
   initScore(editor.value);
@@ -162,6 +167,7 @@ async function convertFromUrl(midiUrl) {
 }
 
 loadConfig();
+initABCEditor();
 let synthControl;
 convertFromUrl("cooleys.mid");
 

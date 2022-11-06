@@ -135,13 +135,22 @@ function initScore(abcString) {
 }
 
 function initABCEditor() {
-  const editor = document.getElementById("abc");
-  editor.setAttribute("autocorrect", "off");
-}
-
-function updateScore() {
-  const editor = document.getElementById("abc");
-  initScore(editor.value);
+    const editorOptions = {
+      paper_id: "score",
+      warnings_id: "abcWarning",
+      abcjsParams: { responsive: "resize" },
+      // TODO: cursor does not works
+      // synth: {
+      //   el: "#player",
+      //   cursorControl: cursorControl,
+      //   options: controlOptions,
+      // }
+    };
+    const textarea = document.getElementById("abc");
+    textarea.value = "";
+    textarea.setAttribute("autocorrect", "off");
+    textarea.setAttribute("spellcheck", "false");
+    new ABCJS.Editor("abc", editorOptions);
 }
 
 function resizeABC(editor) {
@@ -177,7 +186,5 @@ document.ondragover = (e) => {
   e.preventDefault();
 };
 document.ondrop = dropFileEvent;
-document.getElementById("abc").onchange = updateScore;
-document.addEventListener("keyup", updateScore);
 document.getElementById("inputFile").onchange = convertFileEvent;
 document.getElementById("inputUrl").onchange = convertUrlEvent;

@@ -152,30 +152,112 @@ function initABCEditor() {
   new ABCJS.Editor("abc", editorOptions);
 }
 
+function getCheckboxString(name, label) {
+  return `
+<div class="form-check form-check-inline">
+  <label class="form-check-label">
+    <input class="form-check-input" name="${name}" value="${label}" type="checkbox" checked>
+    ${label}
+  </label>
+</div>`;
+}
+
+function setInstrumentsCheckbox() {
+  const set = new Set();
+  ns.notes.forEach((note) => {
+    set.add(note.instrument);
+  });
+  const map = new Map();
+  let str = "";
+  set.forEach((instrumentId) => {
+    str += getCheckboxString("instrument", instrumentId);
+    map.set(instrumentId, true);
+  });
+  const doc = new DOMParser().parseFromString(str, "text/html");
+  const node = document.getElementById("filterInstruments");
+  node.replaceChildren(...doc.body.childNodes);
+  [...node.querySelectorAll("input")].forEach((input) => {
+    input.addEventListener("change", (event) => {
+      const instrumentId = parseInt(input.value);
+      if (event.currentTarget.checked) {
+        map.set(instrumentId, true);
+      } else {
+        map.set(instrumentId, false);
+      }
+      ns = core.sequences.clone(nsCache);
+      ns.notes = ns.notes.filter((note) => map.get(note.instrument));
+      convert(ns);
+    });
+  });
+}
+
+function setProgramsCheckbox() {
+  const set = new Set();
+  ns.notes.forEach((note) => {
+    set.add(note.program);
+  });
+  const map = new Map();
+  let str = "";
+  set.forEach((programId) => {
+    str += getCheckboxString("program", programId);
+    map.set(programId, true);
+  });
+  const doc = new DOMParser().parseFromString(str, "text/html");
+  const node = document.getElementById("filterPrograms");
+  node.replaceChildren(...doc.body.childNodes);
+  [...node.querySelectorAll("input")].forEach((input) => {
+    input.addEventListener("change", (event) => {
+      const programId = parseInt(input.value);
+      if (event.currentTarget.checked) {
+        map.set(programId, true);
+      } else {
+        map.set(programId, false);
+      }
+      ns = core.sequences.clone(nsCache);
+      ns.notes = ns.notes.filter((note) => map.get(note.program));
+      convert(ns);
+    });
+  });
+}
+
+function setToolbar() {
+  setProgramsCheckbox();
+  setInstrumentsCheckbox();
+}
+
 function resizeABC(editor) {
   editor.style.height = editor.scrollHeight + 4 + "px";
 }
 
-async function convertFromBlob(file) {
-  const ns = await core.blobToNoteSequence(file);
-  const abcString = tone2abc(ns, { title: file.name });
+function convert(ns) {
+  const abcString = tone2abc(ns, { title: title });
   const textarea = document.getElementById("abc");
   textarea.value = abcString;
   resizeABC(textarea);
   initScore(abcString);
 }
 
+async function convertFromBlob(file) {
+  ns = await core.blobToNoteSequence(file);
+  nsCache = core.sequences.clone(ns);
+  setToolbar();
+  title = file.name;
+  convert(ns);
+}
+
 async function convertFromUrl(midiUrl) {
-  const ns = await core.urlToNoteSequence(midiUrl);
-  const abcString = tone2abc(ns, { title: midiUrl.split("/").at(-1) });
-  const textarea = document.getElementById("abc");
-  textarea.value = abcString;
-  resizeABC(textarea);
-  initScore(abcString);
+  ns = await core.urlToNoteSequence(midiUrl);
+  nsCache = core.sequences.clone(ns);
+  setToolbar();
+  title = midiUrl.split("/").at(-1);
+  convert(ns);
 }
 
 loadConfig();
 initABCEditor();
+let title;
+let ns;
+let nsCache;
 let synthControl;
 convertFromUrl("cooleys.mid");
 

@@ -16,6 +16,14 @@ function toggleDarkMode() {
   }
 }
 
+function toggleABCPanel() {
+  document.getElementById("abcRow").classList.toggle("d-none");
+  document.getElementById("abcColumn").classList.toggle("d-none");
+  document.getElementById("abc").parentNode.classList.toggle("col-xl");
+  const editor = document.getElementById("abc");
+  resizeABC(editor);
+}
+
 function dropFileEvent(event) {
   event.preventDefault();
   const file = event.dataTransfer.files[0];
@@ -126,12 +134,16 @@ function initScore(abcString) {
   }
 }
 
+function resizeABC(editor) {
+  editor.style.height = editor.scrollHeight + 4 + "px";
+}
+
 async function convertFromBlob(file) {
   const ns = await core.blobToNoteSequence(file);
   const abcString = tone2abc(ns, { title: file.name });
   const editor = document.getElementById("abc");
   editor.value = abcString;
-  editor.style.height = editor.scrollHeight + 4 + "px";
+  resizeABC(editor);
   initScore(abcString);
 }
 
@@ -140,7 +152,7 @@ async function convertFromUrl(midiUrl) {
   const abcString = tone2abc(ns, { title: midiUrl.split("/").at(-1) });
   const editor = document.getElementById("abc");
   editor.value = abcString;
-  editor.style.height = editor.scrollHeight + 4 + "px";
+  resizeABC(editor);
   initScore(abcString);
 }
 
@@ -149,6 +161,7 @@ let synthControl;
 convertFromUrl("cooleys.mid");
 
 document.getElementById("toggleDarkMode").onclick = toggleDarkMode;
+document.getElementById("toggleABCPanel").onclick = toggleABCPanel;
 document.ondragover = (e) => {
   e.preventDefault();
 };

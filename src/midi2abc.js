@@ -616,7 +616,7 @@ function splitChord(chord, endTimes) {
       const startTime = endTimes[i - 1];
       const newChord = [];
       chord.forEach((n) => {
-        if (n.startTime <= startTime && endTime <= n.endTime) {
+        if (n.startTime <= startTime) {
           const newNote = cloneNote(n);
           newNote.startTime = startTime;
           newNote.endTime = endTime;

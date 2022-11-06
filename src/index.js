@@ -20,8 +20,8 @@ function toggleABCPanel() {
   document.getElementById("abcRow").classList.toggle("d-none");
   document.getElementById("abcColumn").classList.toggle("d-none");
   document.getElementById("abc").parentNode.classList.toggle("col-xl");
-  const editor = document.getElementById("abc");
-  resizeABC(editor);
+  const textarea = document.getElementById("abc");
+  resizeABC(textarea);
 }
 
 function dropFileEvent(event) {
@@ -159,18 +159,18 @@ function resizeABC(editor) {
 async function convertFromBlob(file) {
   const ns = await core.blobToNoteSequence(file);
   const abcString = tone2abc(ns, { title: file.name });
-  const editor = document.getElementById("abc");
-  editor.value = abcString;
-  resizeABC(editor);
+  const textarea = document.getElementById("abc");
+  textarea.value = abcString;
+  resizeABC(textarea);
   initScore(abcString);
 }
 
 async function convertFromUrl(midiUrl) {
   const ns = await core.urlToNoteSequence(midiUrl);
   const abcString = tone2abc(ns, { title: midiUrl.split("/").at(-1) });
-  const editor = document.getElementById("abc");
-  editor.value = abcString;
-  resizeABC(editor);
+  const textarea = document.getElementById("abc");
+  textarea.value = abcString;
+  resizeABC(textarea);
   initScore(abcString);
 }
 

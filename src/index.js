@@ -134,6 +134,11 @@ function initScore(abcString) {
   }
 }
 
+function updateScore() {
+  const editor = document.getElementById("abc");
+  initScore(editor.value);
+}
+
 function resizeABC(editor) {
   editor.style.height = editor.scrollHeight + 4 + "px";
 }
@@ -166,5 +171,7 @@ document.ondragover = (e) => {
   e.preventDefault();
 };
 document.ondrop = dropFileEvent;
+document.getElementById("abc").onchange = updateScore;
+document.addEventListener("keyup", updateScore);
 document.getElementById("inputFile").onchange = convertFileEvent;
 document.getElementById("inputUrl").onchange = convertUrlEvent;

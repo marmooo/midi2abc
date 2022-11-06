@@ -149,7 +149,6 @@ function initABCEditor() {
   const textarea = document.getElementById("abc");
   textarea.value = "";
   textarea.setAttribute("autocorrect", "off");
-  textarea.setAttribute("spellcheck", "false");
   new ABCJS.Editor("abc", editorOptions);
 }
 

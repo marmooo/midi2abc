@@ -135,22 +135,22 @@ function initScore(abcString) {
 }
 
 function initABCEditor() {
-    const editorOptions = {
-      paper_id: "score",
-      warnings_id: "abcWarning",
-      abcjsParams: { responsive: "resize" },
-      // TODO: cursor does not works
-      // synth: {
-      //   el: "#player",
-      //   cursorControl: cursorControl,
-      //   options: controlOptions,
-      // }
-    };
-    const textarea = document.getElementById("abc");
-    textarea.value = "";
-    textarea.setAttribute("autocorrect", "off");
-    textarea.setAttribute("spellcheck", "false");
-    new ABCJS.Editor("abc", editorOptions);
+  const editorOptions = {
+    paper_id: "score",
+    warnings_id: "abcWarning",
+    abcjsParams: { responsive: "resize" },
+    // TODO: cursor does not works
+    // synth: {
+    //   el: "#player",
+    //   cursorControl: cursorControl,
+    //   options: controlOptions,
+    // }
+  };
+  const textarea = document.getElementById("abc");
+  textarea.value = "";
+  textarea.setAttribute("autocorrect", "off");
+  textarea.setAttribute("spellcheck", "false");
+  new ABCJS.Editor("abc", editorOptions);
 }
 
 function resizeABC(editor) {

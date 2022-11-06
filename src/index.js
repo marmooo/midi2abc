@@ -225,8 +225,8 @@ function setToolbar() {
   setInstrumentsCheckbox();
 }
 
-function resizeABC(editor) {
-  editor.style.height = editor.scrollHeight + 4 + "px";
+function resizeABC(textarea) {
+  textarea.style.height = textarea.scrollHeight + 4 + "px";
 }
 
 function convert(ns) {

@@ -158,36 +158,39 @@ function cleanupTimeSignatures(timeSignatures) {
   return result;
 }
 
-function cleanupTempos(tempos) {
+function cleanupTempos(tempos, totalTime) {
   const map = new Map();
   tempos.forEach((tempo) => {
     map.set(tempo.time, tempo.qpm);
   });
   const result = [];
   for (const [time, qpm] of map) {
-    const tempo = { time: time, qpm: qpm };
+    const tempo = { time: time, qpm: qpm, timeTo: totalTime };
     result.push(tempo);
+  }
+  if (result.length != 1) {
+    result.slice(0, -1).forEach((tempo, i) => {
+      tempo.timeTo = result[i + 1].time;
+    });
+    result.at(-1).timeTo = totalTime;
   }
   return result;
 }
 
-function splitTempos(notes, tempos) {
-  let tFrom = 0;
+function splitTempos(notes, tempos, totalTime) {
   const result = [];
-  const cleanedTempos = cleanupTempos(tempos);
+  const cleanedTempos = cleanupTempos(tempos, totalTime);
   if (cleanedTempos.length == 1) {
     return [[notes, cleanedTempos[0]]];
   }
-  cleanedTempos.slice(1).forEach((tempo, i) => {
-    const tTo = tempo.time;
+  cleanedTempos.forEach((tempo, i) => {
+    const tFrom = tempo.time;
+    const tTo = tempo.timeTo;
     const filtered = notes
       .filter((n) => n.startTime < tTo)
       .filter((n) => tFrom <= n.startTime);
     result.push([filtered, cleanedTempos[i]]);
-    tFrom = tTo;
   });
-  const filtered = notes.filter((n) => tFrom <= n.startTime);
-  result.push([filtered, cleanedTempos.at(-1)]);
   return result;
 }
 
@@ -697,7 +700,7 @@ function segmentToString(ns, ins, instrumentId, tempo) {
     } else {
       abcString += durationToRestStrings(
         chord[0].endTime,
-        ns.totalTime,
+        tempo.timeTo,
         tempo,
         unitTime,
         sectionLength,
@@ -733,7 +736,7 @@ export default function tone2abc(ns, options) {
     if (options.composer) abcString += `C:${options.composer}\n`;
   }
   cleanupTime(ns);
-  splitTempos(ns.notes, ns.tempos).forEach(([tns, tempo]) => {
+  splitTempos(ns.notes, ns.tempos, ns.totalTime).forEach(([tns, tempo]) => {
     abcString += `Q:1/4=${Math.round(tempo.qpm)}\n`;
     splitInstruments(tns).forEach((ins, instrumentId) => {
       section = 0;

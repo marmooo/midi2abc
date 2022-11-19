@@ -229,8 +229,11 @@ function resizeABC(textarea) {
   textarea.style.height = textarea.scrollHeight + 4 + "px";
 }
 
-function convert(ns) {
-  const abcString = tone2abc(ns, { title: title });
+function convert(ns, title, composer) {
+  const options = {};
+  if (title) options.title = title;
+  if (composer) options.composer = composer;
+  const abcString = tone2abc(ns, options);
   const textarea = document.getElementById("abc");
   textarea.value = abcString;
   resizeABC(textarea);
@@ -241,25 +244,47 @@ async function convertFromBlob(file) {
   ns = await core.blobToNoteSequence(file);
   nsCache = core.sequences.clone(ns);
   setToolbar();
-  title = file.name;
-  convert(ns);
+  const title = file.name;
+  convert(ns, title);
 }
 
 async function convertFromUrl(midiUrl) {
   ns = await core.urlToNoteSequence(midiUrl);
   nsCache = core.sequences.clone(ns);
   setToolbar();
-  title = midiUrl.split("/").at(-1);
-  convert(ns);
+  const title = midiUrl.split("/").at(-1);
+  convert(ns, title);
+}
+
+function parseQuery(queryString) {
+  const query = {};
+  const pairs = (queryString[0] === "?" ? queryString.substr(1) : queryString)
+    .split("&");
+  for (let i = 0; i < pairs.length; i++) {
+    const pair = pairs[i].split("=");
+    query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || "");
+  }
+  return query;
+}
+
+async function convertFromUrlParams() {
+  const query = parseQuery(location.search);
+  ns = await core.urlToNoteSequence(query.url);
+  nsCache = core.sequences.clone(ns);
+  setToolbar();
+  convert(ns, query.title, query.composer);
 }
 
 loadConfig();
 initABCEditor();
-let title;
 let ns;
 let nsCache;
 let synthControl;
-convertFromUrl("cooleys.mid");
+if (location.search) {
+  convertFromUrlParams();
+} else {
+  convertFromUrl("cooleys.mid");
+}
 
 document.getElementById("toggleDarkMode").onclick = toggleDarkMode;
 document.getElementById("toggleABCPanel").onclick = toggleABCPanel;

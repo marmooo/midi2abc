@@ -234,10 +234,14 @@ function convert(ns, title, composer) {
   if (title) options.title = title;
   if (composer) options.composer = composer;
   const abcString = tone2abc(ns, options);
+  document.getElementById("abc").value = abcString;
+  updateScore();
+}
+
+function updateScore() {
   const textarea = document.getElementById("abc");
-  textarea.value = abcString;
   resizeABC(textarea);
-  initScore(abcString);
+  initScore(textarea.value);
 }
 
 async function convertFromBlob(file) {
@@ -292,5 +296,6 @@ document.ondragover = (e) => {
   e.preventDefault();
 };
 document.ondrop = dropFileEvent;
+document.getElementById("abc").onchange = updateScore;
 document.getElementById("inputFile").onchange = convertFileEvent;
 document.getElementById("inputUrl").onchange = convertUrlEvent;

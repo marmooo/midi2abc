@@ -42,6 +42,31 @@ function convertUrlEvent(event) {
   convertFromUrl(event.target.value);
 }
 
+async function convertFromUrlParams() {
+  const query = parseQuery(location.search);
+  ns = await core.urlToNoteSequence(query.url);
+  nsCache = core.sequences.clone(ns);
+  setToolbar();
+  convert(ns, query.title, query.composer);
+}
+
+async function convertFromBlob(file) {
+  ns = await core.blobToNoteSequence(file);
+  nsCache = core.sequences.clone(ns);
+  setToolbar();
+  const title = file.name;
+  convert(ns, title);
+}
+
+async function convertFromUrl(midiUrl) {
+  ns = await core.urlToNoteSequence(midiUrl);
+  nsCache = core.sequences.clone(ns);
+  setToolbar();
+  const title = midiUrl.split("/").at(-1);
+  convert(ns, title);
+}
+
+
 class CursorControl {
   constructor(root) {
     this.root = root;
@@ -244,22 +269,6 @@ function updateScore() {
   initScore(textarea.value);
 }
 
-async function convertFromBlob(file) {
-  ns = await core.blobToNoteSequence(file);
-  nsCache = core.sequences.clone(ns);
-  setToolbar();
-  const title = file.name;
-  convert(ns, title);
-}
-
-async function convertFromUrl(midiUrl) {
-  ns = await core.urlToNoteSequence(midiUrl);
-  nsCache = core.sequences.clone(ns);
-  setToolbar();
-  const title = midiUrl.split("/").at(-1);
-  convert(ns, title);
-}
-
 function parseQuery(queryString) {
   const query = {};
   const pairs = (queryString[0] === "?" ? queryString.substr(1) : queryString)
@@ -269,14 +278,6 @@ function parseQuery(queryString) {
     query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || "");
   }
   return query;
-}
-
-async function convertFromUrlParams() {
-  const query = parseQuery(location.search);
-  ns = await core.urlToNoteSequence(query.url);
-  nsCache = core.sequences.clone(ns);
-  setToolbar();
-  convert(ns, query.title, query.composer);
 }
 
 loadConfig();

@@ -288,7 +288,7 @@ let synthControl;
 if (location.search) {
   convertFromUrlParams();
 } else {
-  convertFromUrl("cooleys.mid");
+  convertFromUrl("abt.mid");
 }
 
 document.getElementById("toggleDarkMode").onclick = toggleDarkMode;

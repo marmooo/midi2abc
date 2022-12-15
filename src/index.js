@@ -19,7 +19,7 @@ function toggleDarkMode() {
 function toggleABCPanel() {
   document.getElementById("abcRow").classList.toggle("d-none");
   document.getElementById("abcColumn").classList.toggle("d-none");
-  document.getElementById("abc").parentNode.classList.toggle("col-xl");
+  document.getElementById("abc").parentNode.parentNode.classList.toggle("row");
   const textarea = document.getElementById("abc");
   resizeABC(textarea);
 }

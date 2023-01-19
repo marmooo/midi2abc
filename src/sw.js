@@ -1,4 +1,4 @@
-var CACHE_NAME = "2022-12-20 09:45";
+var CACHE_NAME = "2023-01-20 06:55";
 var urlsToCache = [
   "/midi2abc/",
   "/midi2abc/index.js",
@@ -6,7 +6,7 @@ var urlsToCache = [
   "/midi2abc/abt.mid",
   "/midi2abc/favicon/favicon.svg",
   "https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css",
-  "https://cdn.jsdelivr.net/combine/npm/tone@14.7.77,npm/@magenta/music@1.23.1/es6/core.js,npm/abcjs@6.1.7/dist/abcjs-basic-min.js",
+  "https://cdn.jsdelivr.net/combine/npm/tone@14.7.77,npm/@magenta/music@1.23.1/es6/core.js,npm/abcjs@6.1.8/dist/abcjs-basic-min.js",
 ];
 
 self.addEventListener("install", function (event) {

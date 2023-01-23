@@ -43,11 +43,11 @@ function convertUrlEvent(event) {
 }
 
 async function convertFromUrlParams() {
-  const query = parseQuery(location.search);
-  ns = await core.urlToNoteSequence(query.url);
+  const query = new URLSearchParams(location.search);
+  ns = await core.urlToNoteSequence(query.get("url"));
   nsCache = core.sequences.clone(ns);
   setToolbar();
-  convert(ns, query.title, query.composer);
+  convert(ns, query.get("title"), query.get("composer"));
 }
 
 async function convertFromBlob(file) {
@@ -267,17 +267,6 @@ function updateScore() {
   const textarea = document.getElementById("abc");
   resizeABC(textarea);
   initScore(textarea.value);
-}
-
-function parseQuery(queryString) {
-  const query = {};
-  const pairs = (queryString[0] === "?" ? queryString.substr(1) : queryString)
-    .split("&");
-  for (let i = 0; i < pairs.length; i++) {
-    const pair = pairs[i].split("=");
-    query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || "");
-  }
-  return query;
 }
 
 loadConfig();

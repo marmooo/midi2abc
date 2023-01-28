@@ -292,6 +292,15 @@ function updateScore() {
   initScore(textarea.value);
 }
 
+function initMIDIInfo() {
+  const query = new URLSearchParams();
+  query.set("title", "When the Swallows Homeward Fly (Agathe)");
+  query.set("composer", "Franz Wilhelm Abt");
+  query.set("maintainer", "Stan Sanderson");
+  query.set("license", "Public Domain");
+  setMIDIInfo(query);
+}
+
 loadConfig();
 initABCEditor();
 let ns;
@@ -301,6 +310,7 @@ if (location.search) {
   convertFromUrlParams();
 } else {
   convertFromUrl("abt.mid");
+  initMIDIInfo();
 }
 
 document.getElementById("toggleDarkMode").onclick = toggleDarkMode;

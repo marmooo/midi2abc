@@ -47,25 +47,57 @@ async function convertFromUrlParams() {
   ns = await core.urlToNoteSequence(query.get("url"));
   nsCache = core.sequences.clone(ns);
   setToolbar();
-  convert(ns, query.get("title"), query.get("composer"));
+  convert(ns, query);
 }
 
 async function convertFromBlob(file) {
   ns = await core.blobToNoteSequence(file);
   nsCache = core.sequences.clone(ns);
   setToolbar();
-  const title = file.name;
-  convert(ns, title);
+  convert(ns);
 }
 
 async function convertFromUrl(midiUrl) {
   ns = await core.urlToNoteSequence(midiUrl);
   nsCache = core.sequences.clone(ns);
   setToolbar();
-  const title = midiUrl.split("/").at(-1);
-  convert(ns, title);
+  convert(ns);
 }
 
+function setMIDIInfo(query) {
+  if (!(query instanceof URLSearchParams)) return;
+  const title = query.get("title");
+  const composer = query.get("composer");
+  const maintainer = query.get("maintainer");
+  const web = query.get("web");
+  const license = query.get("license");
+  document.getElementById("midiTitle").textContent = title;
+  document.getElementById("composer").textContent = composer;
+  if (web) {
+    const a = document.createElement("a");
+    a.href = web;
+    a.textContent = maintainer;
+    document.getElementById("maintainer").replaceChildren(a);
+  } else {
+    document.getElementById("maintainer").textContent = maintainer;
+  }
+  try {
+    new URL(license);
+  } catch {
+    document.getElementById("license").textContent = license;
+  }
+}
+
+function convert(ns, query) {
+  // const options = {};
+  // if (title) options.title = query.get("title");
+  // if (composer) options.composer = query.get("composer");
+  // const abcString = tone2abc(ns, options);
+  setMIDIInfo(query);
+  const abcString = tone2abc(ns);
+  document.getElementById("abc").value = abcString;
+  updateScore();
+}
 
 class CursorControl {
   constructor(root) {
@@ -252,15 +284,6 @@ function setToolbar() {
 
 function resizeABC(textarea) {
   textarea.style.height = textarea.scrollHeight + 4 + "px";
-}
-
-function convert(ns, title, composer) {
-  const options = {};
-  if (title) options.title = title;
-  if (composer) options.composer = composer;
-  const abcString = tone2abc(ns, options);
-  document.getElementById("abc").value = abcString;
-  updateScore();
 }
 
 function updateScore() {

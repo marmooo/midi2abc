@@ -1,11 +1,10 @@
-var CACHE_NAME = "2023-04-02 14:15";
+var CACHE_NAME = "2023-06-18 16:15";
 var urlsToCache = [
   "/midi2abc/",
   "/midi2abc/index.js",
   "/midi2abc/midi2abc.js",
   "/midi2abc/abt.mid",
   "/midi2abc/favicon/favicon.svg",
-  "https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css",
   "https://cdn.jsdelivr.net/combine/npm/tone@14.7.77,npm/@magenta/music@1.23.1/es6/core.js,npm/abcjs@6.2.0/dist/abcjs-basic-min.js",
 ];
 

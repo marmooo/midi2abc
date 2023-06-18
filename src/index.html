@@ -95,11 +95,37 @@
       <div id="toolbar" class="row text-center pt-3">
         <div class="col-sm">
           <h6>Filter Programs</h6>
-          <div id="filterPrograms"></div>
+          <div id="filterPrograms">
+            <div class="form-check form-check-inline">
+              <label class="form-check-label">
+                <input class="form-check-input" name="program" value="0" type="checkbox" checked>
+                0
+              </label>
+            </div>
+          </div>
         </div>
         <div class="col-sm">
           <h6>Filter Instruments</h6>
-          <div id="filterInstruments"></div>
+          <div id="filterInstruments">
+            <div class="form-check form-check-inline">
+              <label class="form-check-label">
+                <input class="form-check-input" name="instrument" value="0" type="checkbox" checked>
+                0
+              </label>
+            </div>
+            <div class="form-check form-check-inline">
+              <label class="form-check-label">
+                <input class="form-check-input" name="instrument" value="1" type="checkbox" checked>
+                1
+              </label>
+            </div>
+            <div class="form-check form-check-inline">
+              <label class="form-check-label">
+                <input class="form-check-input" name="instrument" value="2" type="checkbox" checked>
+                2
+              </label>
+            </div>
+          </div>
         </div>
       </div>
       <div class="row">
@@ -129,6 +155,11 @@
       </div>
       <div class="text-muted">&copy; <a href="https://github.com/marmooo">marmooo</a></div>
     </footer>
+    <div class="drop-inline-css
+      offcanvas-backdrop fade show
+      offcanvas showing hiding
+      d-none" data-bs-backdrop="false" data-bs-scroll="true">
+    </div>
     <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.77,npm/@magenta/music@1.23.1/es6/core.js,npm/abcjs@6.2.0/dist/abcjs-basic-min.js"></script>
     <script src="index.js" type="module"></script>
   </body>

@@ -95,8 +95,10 @@ function convert(ns, query) {
   // const abcString = tone2abc(ns, options);
   setMIDIInfo(query);
   const abcString = tone2abc(ns);
-  document.getElementById("abc").value = abcString;
-  updateScore();
+  const textarea = document.getElementById("abc");
+  textarea.value = abcString;
+  resizeABC(textarea);
+  initScore(abcString);
 }
 
 class CursorControl {
@@ -162,32 +164,38 @@ function initScore(abcString) {
   const player = document.getElementById("player");
   const visualOptions = { responsive: "resize" };
   const visualObj = ABCJS.renderAbc("score", abcString, visualOptions);
-  const cursorControl = new CursorControl(score.querySelector("svg"));
-  if (ABCJS.synth.supportsAudio()) {
-    const controlOptions = {
-      displayLoop: true,
-      displayRestart: true,
-      displayPlay: true,
-      displayProgress: true,
-      displayWarp: true,
-      displayClock: true,
-    };
-    synthControl = new ABCJS.synth.SynthController();
-    synthControl.load("#player", cursorControl, controlOptions);
-    const midiBuffer = new ABCJS.synth.CreateSynth();
-    midiBuffer.init({
-      visualObj: visualObj[0],
-      options: {},
-    }).then(() => {
-      synthControl.setTune(visualObj[0], true).then(() => {
-        const inlineAudio = document.querySelector(".abcjs-inline-audio");
-        inlineAudio.classList.remove("disabled");
-      });
-    });
+  if (visualObj[0].warnings) {
+    document.getElementById("abcWarning").innerHTML = visualObj[0].warnings
+      .join("<br>");
   } else {
-    player.innerHTML = `
-<div class="alert alert-warning">Audio is not supported on this browser.</div>
-`;
+    document.getElementById("abcWarning").innerHTML = "No errors";
+    const cursorControl = new CursorControl(score.querySelector("svg"));
+    if (ABCJS.synth.supportsAudio()) {
+      const controlOptions = {
+        displayLoop: true,
+        displayRestart: true,
+        displayPlay: true,
+        displayProgress: true,
+        displayWarp: true,
+        displayClock: true,
+      };
+      synthControl = new ABCJS.synth.SynthController();
+      synthControl.load("#player", cursorControl, controlOptions);
+      const midiBuffer = new ABCJS.synth.CreateSynth();
+      midiBuffer.init({
+        visualObj: visualObj[0],
+        options: {},
+      }).then(() => {
+        synthControl.setTune(visualObj[0], true).then(() => {
+          const inlineAudio = document.querySelector(".abcjs-inline-audio");
+          inlineAudio.classList.remove("disabled");
+        });
+      });
+    } else {
+      player.innerHTML = `
+  <div class="alert alert-warning">Audio is not supported on this browser.</div>
+  `;
+    }
   }
 }
 
@@ -286,12 +294,6 @@ function resizeABC(textarea) {
   textarea.style.height = textarea.scrollHeight + 4 + "px";
 }
 
-function updateScore() {
-  const textarea = document.getElementById("abc");
-  resizeABC(textarea);
-  initScore(textarea.value);
-}
-
 function initQuery() {
   const query = new URLSearchParams();
   query.set("title", "When the Swallows Homeward Fly (Agathe)");
@@ -319,6 +321,5 @@ document.ondragover = (e) => {
   e.preventDefault();
 };
 document.ondrop = dropFileEvent;
-document.getElementById("abc").onchange = updateScore;
 document.getElementById("inputFile").onchange = convertFileEvent;
 document.getElementById("inputUrl").onchange = convertUrlEvent;

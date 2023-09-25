@@ -1,4 +1,4 @@
-const CACHE_NAME = "2023-08-21 08:10";
+const CACHE_NAME = "2023-09-25 11:10";
 const urlsToCache = [
   "/midi2abc/",
   "/midi2abc/index.js",

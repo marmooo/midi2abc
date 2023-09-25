@@ -65,26 +65,32 @@ async function convertFromUrl(midiUrl, query) {
 }
 
 function setMIDIInfo(query) {
-  if (!(query instanceof URLSearchParams)) return;
-  const title = query.get("title");
-  const composer = query.get("composer");
-  const maintainer = query.get("maintainer");
-  const web = query.get("web");
-  const license = query.get("license");
-  document.getElementById("midiTitle").textContent = title;
-  document.getElementById("composer").textContent = composer;
-  if (web) {
-    const a = document.createElement("a");
-    a.href = web;
-    a.textContent = maintainer;
-    document.getElementById("maintainer").replaceChildren(a);
+  if (query instanceof URLSearchParams) {
+    const title = query.get("title");
+    const composer = query.get("composer");
+    const maintainer = query.get("maintainer");
+    const web = query.get("web");
+    const license = query.get("license");
+    document.getElementById("midiTitle").textContent = title;
+    document.getElementById("composer").textContent = composer;
+    if (web) {
+      const a = document.createElement("a");
+      a.href = web;
+      a.textContent = maintainer;
+      document.getElementById("maintainer").replaceChildren(a);
+    } else {
+      document.getElementById("maintainer").textContent = maintainer;
+    }
+    try {
+      new URL(license);
+    } catch {
+      document.getElementById("license").textContent = license;
+    }
   } else {
-    document.getElementById("maintainer").textContent = maintainer;
-  }
-  try {
-    new URL(license);
-  } catch {
-    document.getElementById("license").textContent = license;
+    document.getElementById("midiTitle").textContent = "";
+    document.getElementById("composer").textContent = "";
+    document.getElementById("maintainer").textContent = "";
+    document.getElementById("license").textContent = "";
   }
 }
 

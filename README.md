@@ -13,6 +13,10 @@ Magenta.js.
 bash build.sh
 ```
 
+## License
+
+MIT
+
 ## Attribution
 
 - [Tone.js](https://github.com/Tonejs/Tone.js) is licensed under the

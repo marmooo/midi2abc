@@ -21,11 +21,7 @@
       gtag('config', 'G-F2179JXDYY');
     </script>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/midi2abc/sw.js');
-        });
-      }
+      navigator.serviceWorker.register("/midi2abc/sw.js");
     </script>
     <link rel="icon" type="image/png" href="/midi2abc/favicon/favicon.png">
     <link rel="icon" type="image/svg+xml" href="/midi2abc/favicon/favicon.svg">

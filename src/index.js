@@ -302,7 +302,6 @@ function initQuery() {
   return query;
 }
 
-loadConfig();
 initABCEditor();
 let ns;
 let nsCache;

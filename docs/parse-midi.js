@@ -1,0 +1,1 @@
+import{parseMidi}from"https://cdn.jsdelivr.net/npm/midi-file@1.2.4/+esm";import{buildNoteSequence,cloneNoteSequence}from"./parse-midi-core.js";export function midiToNoteSequence(e){const t=new Uint8Array(e),n=parseMidi(t);return buildNoteSequence(n)}export{cloneNoteSequence}

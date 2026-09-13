@@ -2,21 +2,23 @@ import { parseMidi } from "https://cdn.jsdelivr.net/npm/midi-file@1.2.4/+esm";
 
 function toAbsoluteTicks(track) {
   let ticks = 0;
-  return track.map((event) => {
-    ticks += event.deltaTime;
-    return { ...event, ticks };
-  });
+  const result = [];
+  for (let i = 0; i < track.length; i++) {
+    ticks += track[i].deltaTime;
+    result.push({ ...track[i], ticks });
+  }
+  return result;
 }
 
 function dedupeByTick(events) {
   const result = [];
   let lastTick = null;
-  events.forEach((event) => {
-    if (event.tick !== lastTick) {
-      result.push(event);
-      lastTick = event.tick;
+  for (let i = 0; i < events.length; i++) {
+    if (events[i].tick !== lastTick) {
+      result.push(events[i]);
+      lastTick = events[i].tick;
     }
-  });
+  }
   return result;
 }
 
@@ -35,12 +37,17 @@ export function midiToNoteSequence(arrayBuffer) {
   const bytes = new Uint8Array(arrayBuffer);
   const parsed = parseMidi(bytes);
   const ticksPerBeat = parsed.header.ticksPerBeat || 480;
-  const tracksAbs = parsed.tracks.map(toAbsoluteTicks);
+  const tracksAbs = [];
+  for (let i = 0; i < parsed.tracks.length; i++) {
+    tracksAbs.push(toAbsoluteTicks(parsed.tracks[i]));
+  }
 
   let tempos = [];
   let timeSignatures = [];
-  tracksAbs.forEach((track) => {
-    track.forEach((event) => {
+  for (let t = 0; t < tracksAbs.length; t++) {
+    const track = tracksAbs[t];
+    for (let i = 0; i < track.length; i++) {
+      const event = track[i];
       if (event.type === "setTempo") {
         tempos.push({
           tick: event.ticks,
@@ -53,8 +60,8 @@ export function midiToNoteSequence(arrayBuffer) {
           denominator: event.denominator,
         });
       }
-    });
-  });
+    }
+  }
   tempos.sort((a, b) => a.tick - b.tick);
   timeSignatures.sort((a, b) => a.tick - b.tick);
   tempos = dedupeByTick(tempos);
@@ -70,11 +77,13 @@ export function midiToNoteSequence(arrayBuffer) {
   // "instrument" segment, in the order it first appears).
   const instrumentGroups = [];
   let totalTicks = 0;
-  tracksAbs.forEach((track) => {
+  for (let t = 0; t < tracksAbs.length; t++) {
+    const track = tracksAbs[t];
     const programByChannel = new Map();
     const activeNotes = new Map();
     const notes = [];
-    track.forEach((event) => {
+    for (let i = 0; i < track.length; i++) {
+      const event = track[i];
       if (event.type === "programChange") {
         programByChannel.set(event.channel, event.programNumber);
       } else if (event.type === "noteOn" && event.velocity > 0) {
@@ -106,24 +115,25 @@ export function midiToNoteSequence(arrayBuffer) {
           }
         }
       }
-    });
-    const trackEndTicks = track.length ? track.at(-1).ticks : 0;
+    }
+    const trackEndTicks = track.length ? track[track.length - 1].ticks : 0;
     if (trackEndTicks > totalTicks) totalTicks = trackEndTicks;
     if (notes.length) {
       notes.sort((a, b) => a.startTick - b.startTick);
       instrumentGroups.push(notes);
-      const last = notes.at(-1).endTick;
+      const last = notes[notes.length - 1].endTick;
       if (last > totalTicks) totalTicks = last;
     }
-  });
+  }
 
   const notes = [];
-  instrumentGroups.forEach((group, i) => {
-    group.forEach((note) => {
-      note.instrument = i;
-      notes.push(note);
-    });
-  });
+  for (let i = 0; i < instrumentGroups.length; i++) {
+    const group = instrumentGroups[i];
+    for (let j = 0; j < group.length; j++) {
+      group[j].instrument = i;
+      notes.push(group[j]);
+    }
+  }
 
   return { ticksPerBeat, notes, tempos, timeSignatures, totalTicks };
 }

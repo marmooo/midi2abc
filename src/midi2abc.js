@@ -9,23 +9,23 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       const newDuration = base * keyLength.numerator / keyLength.denominator /
         unitTime;
       const t = chord[0].startTick + newDuration;
-      chord.forEach((note) => {
-        note.startTick = t;
-      });
+      for (let i = 0; i < chord.length; i++) {
+        chord[i].startTick = t;
+      }
       const abc2 = chordToString(chord, nextChord, unitTime);
-      chord.forEach((note) => {
-        note.startTick = startTick;
-        note.endTick = t;
-      });
+      for (let i = 0; i < chord.length; i++) {
+        chord[i].startTick = startTick;
+        chord[i].endTick = t;
+      }
       if (abc2 == "") {
-        chord.forEach((note) => note.tie = false);
+        for (let i = 0; i < chord.length; i++) chord[i].tie = false;
       } else {
-        chord.forEach((note) => note.tie = true);
+        for (let i = 0; i < chord.length; i++) chord[i].tie = true;
       }
       const abc1 = chordToString(chord, null, unitTime);
-      chord.forEach((note) => {
-        note.endTick = endTick;
-      });
+      for (let i = 0; i < chord.length; i++) {
+        chord[i].endTick = endTick;
+      }
       duration = round(duration, 1e6);
       console.log(
         `illegal duration is rounded: ${duration}, ${error}, ${abcString}`,
@@ -34,9 +34,13 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
     } else if (nextChord) {
       const diff = error / unitTime;
       if (chord[0].endTick == nextChord[0].startTick) {
-        nextChord.forEach((n) => n.startTick -= diff);
+        for (let i = 0; i < nextChord.length; i++) {
+          nextChord[i].startTick -= diff;
+        }
       }
-      chord.forEach((n) => n.endTick -= diff);
+      for (let i = 0; i < chord.length; i++) {
+        chord[i].endTick -= diff;
+      }
       abcString += chordToString(chord, nextChord, unitTime);
       duration = round(duration, 1e6);
       console.log(
@@ -148,31 +152,33 @@ function noteToKeyString(note) {
 
 function cleanupTimeSignatures(timeSignatures) {
   const map = new Map();
-  timeSignatures.forEach((timeSignature) => {
-    map.set(timeSignature.tick, timeSignature);
-  });
+  for (let i = 0; i < timeSignatures.length; i++) {
+    map.set(timeSignatures[i].tick, timeSignatures[i]);
+  }
+  const values = Array.from(map.values());
   const result = [];
-  for (const [_time, timeSignature] of map) {
-    result.push(timeSignature);
+  for (let i = 0; i < values.length; i++) {
+    result.push(values[i]);
   }
   return result;
 }
 
 function cleanupTempos(tempos, totalTicks) {
   const map = new Map();
-  tempos.forEach((tempo) => {
-    map.set(tempo.tick, tempo.qpm);
-  });
+  for (let i = 0; i < tempos.length; i++) {
+    map.set(tempos[i].tick, tempos[i].qpm);
+  }
+  const entries = Array.from(map.entries());
   const result = [];
-  for (const [tick, qpm] of map) {
-    const tempo = { tick: tick, qpm: qpm, tickTo: totalTicks };
-    result.push(tempo);
+  for (let i = 0; i < entries.length; i++) {
+    const [tick, qpm] = entries[i];
+    result.push({ tick: tick, qpm: qpm, tickTo: totalTicks });
   }
   if (result.length != 1) {
-    result.slice(0, -1).forEach((tempo, i) => {
-      tempo.tickTo = result[i + 1].tick;
-    });
-    result.at(-1).tickTo = totalTicks;
+    for (let i = 0; i < result.length - 1; i++) {
+      result[i].tickTo = result[i + 1].tick;
+    }
+    result[result.length - 1].tickTo = totalTicks;
   }
   return result;
 }
@@ -183,14 +189,15 @@ function splitTempos(notes, tempos, totalTicks) {
   if (cleanedTempos.length == 1) {
     return [[notes, cleanedTempos[0]]];
   }
-  cleanedTempos.forEach((tempo, i) => {
+  for (let i = 0; i < cleanedTempos.length; i++) {
+    const tempo = cleanedTempos[i];
     const tFrom = tempo.tick;
     const tTo = tempo.tickTo;
     const filtered = notes
       .filter((n) => n.startTick < tTo)
       .filter((n) => tFrom <= n.startTick);
     result.push([filtered, cleanedTempos[i]]);
-  });
+  }
   return result;
 }
 
@@ -198,13 +205,13 @@ function splitInstruments(notes) {
   let instrument = 0;
   let pos = 0;
   const result = [];
-  notes.forEach((n, i) => {
-    if (n.instrument != instrument) {
+  for (let i = 0; i < notes.length; i++) {
+    if (notes[i].instrument != instrument) {
       result.push(notes.slice(pos, i));
       instrument += 1;
       pos = i;
     }
-  });
+  }
   result.push(notes.slice(pos));
   return result;
 }
@@ -283,7 +290,9 @@ function approximateKeyLength(duration) {
     // - max denominator is 9 (limitation of abc.js)
     n *= 2;
     for (; n >= 1; n /= 2) {
-      for (const i of [3, 5, 7]) {
+      const primes1 = [3, 5, 7];
+      for (let p = 0; p < primes1.length; p++) {
+        const i = primes1[p];
         for (let j = 1; j <= i - 1; j++) {
           if (duration / n * i / j == base) {
             return new KeyLength(j, i, -n, 0);
@@ -321,7 +330,9 @@ function approximateKeyLength(duration) {
     // - prime numbers only (consider speed)
     // - max denominator is 9 (limitation of abc.js)
     for (; n >= 1; n /= 2) {
-      for (const i of [3, 5, 7]) {
+      const primes2 = [3, 5, 7];
+      for (let p = 0; p < primes2.length; p++) {
+        const i = primes2[p];
         for (let j = 1; j <= i - 1; j++) {
           if (duration * n * i / j == base) {
             return new KeyLength(j, i, n, 0);
@@ -359,13 +370,14 @@ function durationToRestString(startTick, endTick, unitTime) {
   if (startTick < endTick) {
     const duration = (endTick - startTick) * unitTime;
     let abc = "";
-    splitRestDurtion(duration).forEach((d) => {
-      const keyLength = approximateKeyLength(d);
+    const durations = splitRestDurtion(duration);
+    for (let i = 0; i < durations.length; i++) {
+      const keyLength = approximateKeyLength(durations[i]);
       const [len1, len2] = calcKeyLength(keyLength);
-      if (len2 == null) return "";
+      if (len2 == null) continue;
       const tupletString = getTupletString(len1, keyLength);
       abc += tupletString + "z" + len2;
-    });
+    }
     return abc;
   } else {
     return "";
@@ -386,18 +398,17 @@ function guessClef(ins) {
 
 function cleanupTicks(ns) {
   let min = Infinity;
-  ns.notes.forEach((n) => {
-    const startTick = n.startTick;
-    if (startTick < min) min = startTick;
-  });
+  for (let i = 0; i < ns.notes.length; i++) {
+    if (ns.notes[i].startTick < min) min = ns.notes[i].startTick;
+  }
   if (min != 0) {
-    ns.notes.forEach((n) => {
-      n.startTick -= min;
-      n.endTick -= min;
-    });
-    ns.tempos.forEach((tempo) => {
-      if (0 < tempo.tick) tempo.tick -= min;
-    });
+    for (let i = 0; i < ns.notes.length; i++) {
+      ns.notes[i].startTick -= min;
+      ns.notes[i].endTick -= min;
+    }
+    for (let i = 0; i < ns.tempos.length; i++) {
+      if (0 < ns.tempos[i].tick) ns.tempos[i].tick -= min;
+    }
     ns.totalTicks -= min;
   }
   return ns;
@@ -410,9 +421,9 @@ function round(x, epsilon) {
 function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
   let abcString = "";
   const endTick = chord[0].endTick;
-  chord.forEach((note) => note.endTick = sectionEnd);
+  for (let i = 0; i < chord.length; i++) chord[i].endTick = sectionEnd;
   if (round(sectionEnd, 1e13) == round(endTick, 1e13)) {
-    chord.forEach((note) => note.tie = false);
+    for (let i = 0; i < chord.length; i++) chord[i].tie = false;
     abcString += chordToString(chord, nextChord, unitTime);
     abcString += "|";
     if (section % 4 == 0) abcString += "\n";
@@ -420,7 +431,7 @@ function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
     sectionEnd = tempo.tick + section * sectionLength;
     return abcString;
   } else {
-    chord.forEach((note) => note.tie = true);
+    for (let i = 0; i < chord.length; i++) chord[i].tie = true;
     abcString += chordToString(chord, nextChord, unitTime);
     abcString += "|";
     const count = Math.floor((endTick - chord[0].startTick) / sectionLength);
@@ -428,12 +439,12 @@ function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
     for (let i = 1; i < count; i++) {
       const nextSection = section + 1;
       const nextSectionEnd = tempo.tick + nextSection * sectionLength;
-      chord.forEach((note) => {
-        note.startTick = sectionEnd;
-        note.endTick = nextSectionEnd;
-      });
+      for (let j = 0; j < chord.length; j++) {
+        chord[j].startTick = sectionEnd;
+        chord[j].endTick = nextSectionEnd;
+      }
       if (round(nextSectionEnd, 1e13) == round(endTick, 1e13)) {
-        chord.forEach((note) => note.tie = false);
+        for (let j = 0; j < chord.length; j++) chord[j].tie = false;
         abcString += chordToString(chord, nextChord, unitTime);
         abcString += "|";
         if (nextSection % 4 == 0) abcString += "\n";
@@ -441,7 +452,7 @@ function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
         sectionEnd = nextSectionEnd;
         return abcString;
       } else {
-        chord.forEach((note) => note.tie = true);
+        for (let j = 0; j < chord.length; j++) chord[j].tie = true;
         abcString += chordToString(chord, nextChord, unitTime);
         abcString += "|";
         if (nextSection % 4 == 0) abcString += "\n";
@@ -449,11 +460,11 @@ function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
         sectionEnd = nextSectionEnd;
       }
     }
-    chord.forEach((note) => {
-      note.startTick = sectionEnd;
-      note.endTick = endTick;
-      note.tie = false;
-    });
+    for (let i = 0; i < chord.length; i++) {
+      chord[i].startTick = sectionEnd;
+      chord[i].endTick = endTick;
+      chord[i].tie = false;
+    }
     abcString += chordToString(chord, nextChord, unitTime);
     section += 1;
     sectionEnd = tempo.tick + section * sectionLength;
@@ -550,10 +561,10 @@ function getTargetPosition(ns, i) {
 
 function getNotationBreaks(ns) {
   const set = new Set();
-  ns.forEach((n) => {
-    set.add(n.startTick);
-    set.add(n.endTick);
-  });
+  for (let i = 0; i < ns.length; i++) {
+    set.add(ns[i].startTick);
+    set.add(ns[i].endTick);
+  }
   const arr = [...set];
   arr.sort((a, b) => {
     if (a > b) return 1;
@@ -596,11 +607,13 @@ function getChord(ns) {
 
 function splitChord(chord, endTicks) {
   const result = [];
-  endTicks.forEach((endTick, i) => {
+  for (let i = 0; i < endTicks.length; i++) {
+    const endTick = endTicks[i];
     if (i == 0) {
       const newChord = [];
       const startTick = chord[0].startTick;
-      chord.forEach((n) => {
+      for (let j = 0; j < chord.length; j++) {
+        const n = chord[j];
         if (n.startTick == startTick) {
           const newNote = cloneNote(n);
           newNote.endTick = endTick;
@@ -610,12 +623,13 @@ function splitChord(chord, endTicks) {
           }
           newChord.push(newNote);
         }
-      });
+      }
       result.push(newChord);
     } else {
       const startTick = endTicks[i - 1];
       const newChord = [];
-      chord.forEach((n) => {
+      for (let j = 0; j < chord.length; j++) {
+        const n = chord[j];
         if (n.startTick <= startTick && endTick <= n.endTick) {
           const newNote = cloneNote(n);
           newNote.startTick = startTick;
@@ -626,17 +640,17 @@ function splitChord(chord, endTicks) {
           }
           newChord.push(newNote);
         }
-      });
+      }
       result.push(newChord);
     }
-  });
-  result.forEach((chord) => {
-    chord.sort((a, b) => {
+  }
+  for (let i = 0; i < result.length; i++) {
+    result[i].sort((a, b) => {
       if (a.tie == b.tie) return 0;
       if (a.tie) return -1;
       return 1;
     });
-  });
+  }
   return result;
 }
 
@@ -663,7 +677,8 @@ function segmentToString(ns, ins, instrumentId, tempo) {
   timeSignature = timeSignatures.shift();
 
   const chords = getChord(ins);
-  chords.forEach((chord, i) => {
+  for (let i = 0; i < chords.length; i++) {
+    const chord = chords[i];
     // TODO: irregular meter
     // start point shifts with long notes
     // if (timeSignature && chord[0].startTick >= timeSignature.tick) {
@@ -713,7 +728,7 @@ function segmentToString(ns, ins, instrumentId, tempo) {
         abcString += "\n";
       }
     }
-  });
+  }
   return abcString;
 }
 
@@ -739,12 +754,24 @@ export default function notesToAbc(ns, options) {
     if (options.composer) abcString += `C:${options.composer}\n`;
   }
   cleanupTicks(ns);
-  splitTempos(ns.notes, ns.tempos, ns.totalTicks).forEach(([tns, tempo]) => {
+  const tempoSegments = splitTempos(ns.notes, ns.tempos, ns.totalTicks);
+  for (let i = 0; i < tempoSegments.length; i++) {
+    const [tns, tempo] = tempoSegments[i];
     abcString += `Q:1/4=${Math.round(tempo.qpm)}\n`;
-    splitInstruments(tns).forEach((ins, instrumentId) => {
+    const instrumentSegments = splitInstruments(tns);
+    for (
+      let instrumentId = 0;
+      instrumentId < instrumentSegments.length;
+      instrumentId++
+    ) {
       section = 0;
-      abcString += segmentToString(ns, ins, instrumentId, tempo);
-    });
-  });
+      abcString += segmentToString(
+        ns,
+        instrumentSegments[instrumentId],
+        instrumentId,
+        tempo,
+      );
+    }
+  }
   return abcString;
 }

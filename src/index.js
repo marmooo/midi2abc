@@ -1,5 +1,5 @@
 import ABCJS from "https://cdn.jsdelivr.net/npm/abcjs@6.7.0/+esm";
-import tone2abc from "./midi2abc.js";
+import notesToAbc from "./midi2abc.js";
 import { cloneNoteSequence, midiToNoteSequence } from "./parse-midi.js";
 
 function toggleDarkMode() {
@@ -100,9 +100,9 @@ function convert(ns, query) {
   // const options = {};
   // if (title) options.title = query.get("title");
   // if (composer) options.composer = query.get("composer");
-  // const abcString = tone2abc(ns, options);
+  // const abcString = notesToAbc(ns, options);
   setMIDIInfo(query);
-  const abcString = tone2abc(ns);
+  const abcString = notesToAbc(ns);
   const textarea = document.getElementById("abc");
   textarea.value = abcString;
   resizeABC(textarea);
@@ -237,19 +237,22 @@ function getCheckboxString(name, label) {
 
 function setInstrumentsCheckbox() {
   const set = new Set();
-  ns.notes.forEach((note) => {
-    set.add(note.instrument);
-  });
+  for (let i = 0; i < ns.notes.length; i++) {
+    set.add(ns.notes[i].instrument);
+  }
+  const instrumentIds = [...set];
   const map = new Map();
   let str = "";
-  set.forEach((instrumentId) => {
-    str += getCheckboxString("instrument", instrumentId);
-    map.set(instrumentId, true);
-  });
+  for (let i = 0; i < instrumentIds.length; i++) {
+    str += getCheckboxString("instrument", instrumentIds[i]);
+    map.set(instrumentIds[i], true);
+  }
   const doc = new DOMParser().parseFromString(str, "text/html");
   const node = document.getElementById("filterInstruments");
   node.replaceChildren(...doc.body.childNodes);
-  [...node.querySelectorAll("input")].forEach((input) => {
+  const inputs = node.querySelectorAll("input");
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
     input.addEventListener("change", (event) => {
       const instrumentId = parseInt(input.value);
       if (event.currentTarget.checked) {
@@ -258,27 +261,34 @@ function setInstrumentsCheckbox() {
         map.set(instrumentId, false);
       }
       ns = cloneNoteSequence(nsCache);
-      ns.notes = ns.notes.filter((note) => map.get(note.instrument));
+      const filteredNotes = [];
+      for (let i = 0; i < ns.notes.length; i++) {
+        if (map.get(ns.notes[i].instrument)) filteredNotes.push(ns.notes[i]);
+      }
+      ns.notes = filteredNotes;
       convert(ns);
     });
-  });
+  }
 }
 
 function setProgramsCheckbox() {
   const set = new Set();
-  ns.notes.forEach((note) => {
-    set.add(note.program);
-  });
+  for (let i = 0; i < ns.notes.length; i++) {
+    set.add(ns.notes[i].program);
+  }
+  const programIds = [...set];
   const map = new Map();
   let str = "";
-  set.forEach((programId) => {
-    str += getCheckboxString("program", programId);
-    map.set(programId, true);
-  });
+  for (let i = 0; i < programIds.length; i++) {
+    str += getCheckboxString("program", programIds[i]);
+    map.set(programIds[i], true);
+  }
   const doc = new DOMParser().parseFromString(str, "text/html");
   const node = document.getElementById("filterPrograms");
   node.replaceChildren(...doc.body.childNodes);
-  [...node.querySelectorAll("input")].forEach((input) => {
+  const inputs = node.querySelectorAll("input");
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
     input.addEventListener("change", (event) => {
       const programId = parseInt(input.value);
       if (event.currentTarget.checked) {
@@ -287,10 +297,14 @@ function setProgramsCheckbox() {
         map.set(programId, false);
       }
       ns = cloneNoteSequence(nsCache);
-      ns.notes = ns.notes.filter((note) => map.get(note.program));
+      const filteredNotes = [];
+      for (let i = 0; i < ns.notes.length; i++) {
+        if (map.get(ns.notes[i].program)) filteredNotes.push(ns.notes[i]);
+      }
+      ns.notes = filteredNotes;
       convert(ns);
     });
-  });
+  }
 }
 
 function setToolbar() {

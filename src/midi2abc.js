@@ -92,10 +92,12 @@ function chordToString(chord, nextChord, unitTime) {
   if (chord.length == 1 && !chord[0].splitted) {
     return noteToString(chord, nextChord, unitTime);
   } else {
-    const str = chord.map((note) => {
+    let str = "";
+    for (let i = 0; i < chord.length; i++) {
+      const note = chord[i];
       const tie = (note.tie) ? "-" : "";
-      return noteToKeyString(note) + tie;
-    }).join("");
+      str += noteToKeyString(note) + tie;
+    }
     const n = chord[0];
     const duration = (n.endTick - n.startTick) * unitTime;
     const keyLength = approximateKeyLength(duration);
@@ -193,9 +195,12 @@ function splitTempos(notes, tempos, totalTicks) {
     const tempo = cleanedTempos[i];
     const tFrom = tempo.tick;
     const tTo = tempo.tickTo;
-    const filtered = notes
-      .filter((n) => n.startTick < tTo)
-      .filter((n) => tFrom <= n.startTick);
+    const filtered = [];
+    for (let j = 0; j < notes.length; j++) {
+      if (notes[j].startTick < tTo && tFrom <= notes[j].startTick) {
+        filtered.push(notes[j]);
+      }
+    }
     result.push([filtered, cleanedTempos[i]]);
   }
   return result;
@@ -385,9 +390,10 @@ function durationToRestString(startTick, endTick, unitTime) {
 }
 
 function guessClef(ins) {
-  const total = ins.reduce((sum, n) => {
-    return sum + n.pitch;
-  }, 0);
+  let total = 0;
+  for (let i = 0; i < ins.length; i++) {
+    total += ins[i].pitch;
+  }
   const pitch = total / ins.length;
   if (pitch > 64) {
     return "G2";
@@ -586,17 +592,22 @@ function getChord(ns) {
       i = j;
     } else {
       const endTick = ns[i].endTick;
-      const targetBreaks = notationBreaks.filter((t) => t <= endTick);
+      const targetBreaks = [];
+      for (let k = 0; k < notationBreaks.length; k++) {
+        if (notationBreaks[k] <= endTick) targetBreaks.push(notationBreaks[k]);
+      }
       const chords = splitChord(target, targetBreaks);
       result.push(...chords);
-      const nextTarget = target
-        .filter((n) => endTick < n.endTick)
-        .map((n) => {
+      const nextTarget = [];
+      for (let k = 0; k < target.length; k++) {
+        const n = target[k];
+        if (endTick < n.endTick) {
           const newNote = cloneNote(n);
           newNote.startTick = endTick;
           newNote.splitted = true;
-          return newNote;
-        });
+          nextTarget.push(newNote);
+        }
+      }
       ns = ns.slice(j);
       ns.unshift(...nextTarget);
       i = 0;

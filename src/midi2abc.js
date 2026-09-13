@@ -1,4 +1,11 @@
-function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
+function fixIllegalDuration(
+  chord,
+  nextChord,
+  unitTime,
+  unitLength,
+  keyLength,
+  duration,
+) {
   const error = keyLength.error;
   if (error != 0) {
     let abcString = "";
@@ -12,7 +19,7 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       for (let i = 0; i < chord.length; i++) {
         chord[i].startTick = t;
       }
-      const abc2 = chordToString(chord, nextChord, unitTime);
+      const abc2 = chordToString(chord, nextChord, unitTime, unitLength);
       for (let i = 0; i < chord.length; i++) {
         chord[i].startTick = startTick;
         chord[i].endTick = t;
@@ -22,7 +29,7 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       } else {
         for (let i = 0; i < chord.length; i++) chord[i].tie = true;
       }
-      const abc1 = chordToString(chord, null, unitTime);
+      const abc1 = chordToString(chord, null, unitTime, unitLength);
       for (let i = 0; i < chord.length; i++) {
         chord[i].endTick = endTick;
       }
@@ -41,7 +48,7 @@ function fixIllegalDuration(chord, nextChord, unitTime, keyLength, duration) {
       for (let i = 0; i < chord.length; i++) {
         chord[i].endTick -= diff;
       }
-      abcString += chordToString(chord, nextChord, unitTime);
+      abcString += chordToString(chord, nextChord, unitTime, unitLength);
       duration = round(duration, 1e6);
       console.log(
         `illegal duration is rounded: ${duration}, ${error}, ${abcString}`,
@@ -68,16 +75,17 @@ function getTupletString(len1, keyLength) {
   }
 }
 
-function noteToString(chord, nextChord, unitTime) {
+function noteToString(chord, nextChord, unitTime, unitLength) {
   const note = chord[0];
   const keyString = noteToKeyString(note);
   const duration = (note.endTick - note.startTick) * unitTime;
-  const keyLength = approximateKeyLength(duration);
+  const keyLength = approximateKeyLength(duration, unitLength);
   if (keyLength.numerator == 0) return "";
   const abc = fixIllegalDuration(
     chord,
     nextChord,
     unitTime,
+    unitLength,
     keyLength,
     duration,
   );
@@ -88,9 +96,9 @@ function noteToString(chord, nextChord, unitTime) {
   return tupletString + keyString + len2 + tie;
 }
 
-function chordToString(chord, nextChord, unitTime) {
+function chordToString(chord, nextChord, unitTime, unitLength) {
   if (chord.length == 1 && !chord[0].splitted) {
-    return noteToString(chord, nextChord, unitTime);
+    return noteToString(chord, nextChord, unitTime, unitLength);
   } else {
     let str = "";
     for (let i = 0; i < chord.length; i++) {
@@ -100,12 +108,13 @@ function chordToString(chord, nextChord, unitTime) {
     }
     const n = chord[0];
     const duration = (n.endTick - n.startTick) * unitTime;
-    const keyLength = approximateKeyLength(duration);
+    const keyLength = approximateKeyLength(duration, unitLength);
     if (keyLength.numerator == 0) return "";
     const abc = fixIllegalDuration(
       chord,
       nextChord,
       unitTime,
+      unitLength,
       keyLength,
       duration,
     );
@@ -251,7 +260,7 @@ function calcKeyLength(keyLength) {
   }
 }
 
-function approximateKeyLength(duration) {
+function approximateKeyLength(duration, unitLength) {
   const base = 60;
   duration = Math.round(duration * 1e6) / 1e6;
   if (duration == base) return new KeyLength(1, 1, 0, 0);
@@ -259,9 +268,14 @@ function approximateKeyLength(duration) {
     console.error(`duration is negative: ${duration}`);
     return new KeyLength(0, 0, 0, duration);
   }
-  if (duration * 8 < base) {
-    // abc.js does not support duration less than z/8.
-    console.log(`duration (less than z/8) is ignored: ${duration}`);
+  // abc.js cannot represent a duration shorter than 1/64 of a whole note,
+  // regardless of the tune's L: (default note length). base represents
+  // exactly 1 L-unit, and 1 whole note = 4 * 4 * unitLength L-units (since
+  // L:1/(4*unitLength)), so the shortest representable duration in this
+  // pseudo-unit space is base * (4 * unitLength) / 64 = base * unitLength / 16.
+  const minDuration = base * unitLength / 16;
+  if (duration < minDuration) {
+    console.log(`duration (less than 1/64) is ignored: ${duration}`);
     return new KeyLength(0, 0, 0, duration);
   }
   let n = 2;
@@ -371,13 +385,13 @@ function splitRestDurtion(duration) {
   return result;
 }
 
-function durationToRestString(startTick, endTick, unitTime) {
+function durationToRestString(startTick, endTick, unitTime, unitLength) {
   if (startTick < endTick) {
     const duration = (endTick - startTick) * unitTime;
     let abc = "";
     const durations = splitRestDurtion(duration);
     for (let i = 0; i < durations.length; i++) {
-      const keyLength = approximateKeyLength(durations[i]);
+      const keyLength = approximateKeyLength(durations[i], unitLength);
       const [len1, len2] = calcKeyLength(keyLength);
       if (len2 == null) continue;
       const tupletString = getTupletString(len1, keyLength);
@@ -424,13 +438,20 @@ function round(x, epsilon) {
   return Math.round(x * epsilon) / epsilon;
 }
 
-function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
+function chordToTieString(
+  chord,
+  nextChord,
+  unitTime,
+  unitLength,
+  sectionLength,
+  tempo,
+) {
   let abcString = "";
   const endTick = chord[0].endTick;
   for (let i = 0; i < chord.length; i++) chord[i].endTick = sectionEnd;
   if (round(sectionEnd, 1e13) == round(endTick, 1e13)) {
     for (let i = 0; i < chord.length; i++) chord[i].tie = false;
-    abcString += chordToString(chord, nextChord, unitTime);
+    abcString += chordToString(chord, nextChord, unitTime, unitLength);
     abcString += "|";
     if (section % 4 == 0) abcString += "\n";
     section += 1;
@@ -438,7 +459,7 @@ function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
     return abcString;
   } else {
     for (let i = 0; i < chord.length; i++) chord[i].tie = true;
-    abcString += chordToString(chord, nextChord, unitTime);
+    abcString += chordToString(chord, nextChord, unitTime, unitLength);
     abcString += "|";
     const count = Math.floor((endTick - chord[0].startTick) / sectionLength);
     if (section % 4 == 0) abcString += "\n";
@@ -451,7 +472,7 @@ function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
       }
       if (round(nextSectionEnd, 1e13) == round(endTick, 1e13)) {
         for (let j = 0; j < chord.length; j++) chord[j].tie = false;
-        abcString += chordToString(chord, nextChord, unitTime);
+        abcString += chordToString(chord, nextChord, unitTime, unitLength);
         abcString += "|";
         if (nextSection % 4 == 0) abcString += "\n";
         section = nextSection;
@@ -459,7 +480,7 @@ function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
         return abcString;
       } else {
         for (let j = 0; j < chord.length; j++) chord[j].tie = true;
-        abcString += chordToString(chord, nextChord, unitTime);
+        abcString += chordToString(chord, nextChord, unitTime, unitLength);
         abcString += "|";
         if (nextSection % 4 == 0) abcString += "\n";
         section = nextSection;
@@ -471,7 +492,7 @@ function chordToTieString(chord, nextChord, unitTime, sectionLength, tempo) {
       chord[i].endTick = endTick;
       chord[i].tie = false;
     }
-    abcString += chordToString(chord, nextChord, unitTime);
+    abcString += chordToString(chord, nextChord, unitTime, unitLength);
     section += 1;
     sectionEnd = tempo.tick + section * sectionLength;
     return abcString;
@@ -483,27 +504,43 @@ function durationToRestStrings(
   endTick,
   tempo,
   unitTime,
+  unitLength,
   sectionLength,
 ) {
   let abcString = "";
   if (round(sectionEnd, 1e13) <= round(endTick, 1e13)) {
     let prevSectionEnd = sectionEnd;
     if (round(startTick, 1e13) < round(sectionEnd, 1e13)) {
-      abcString += durationToRestString(startTick, sectionEnd, unitTime);
+      abcString += durationToRestString(
+        startTick,
+        sectionEnd,
+        unitTime,
+        unitLength,
+      );
       abcString += "|";
       if (section % 4 == 0) abcString += "\n";
       section += 1;
       sectionEnd = tempo.tick + section * sectionLength;
       const count = Math.floor((endTick - prevSectionEnd) / sectionLength);
       for (let i = 0; i < count; i++) {
-        abcString += durationToRestString(prevSectionEnd, sectionEnd, unitTime);
+        abcString += durationToRestString(
+          prevSectionEnd,
+          sectionEnd,
+          unitTime,
+          unitLength,
+        );
         abcString += "|";
         if (section % 4 == 0) abcString += "\n";
         section += 1;
         prevSectionEnd = sectionEnd;
         sectionEnd = tempo.tick + section * sectionLength;
       }
-      abcString += durationToRestString(prevSectionEnd, endTick, unitTime);
+      abcString += durationToRestString(
+        prevSectionEnd,
+        endTick,
+        unitTime,
+        unitLength,
+      );
     } else {
       if (round(sectionEnd, 1e13) == round(startTick, 1e13)) {
         abcString += "|";
@@ -512,9 +549,19 @@ function durationToRestStrings(
         sectionEnd = tempo.tick + section * sectionLength;
       }
       if (round(endTick, 1e13) < round(sectionEnd, 1e13)) {
-        abcString += durationToRestString(startTick, endTick, unitTime);
+        abcString += durationToRestString(
+          startTick,
+          endTick,
+          unitTime,
+          unitLength,
+        );
       } else {
-        abcString += durationToRestString(startTick, sectionEnd, unitTime);
+        abcString += durationToRestString(
+          startTick,
+          sectionEnd,
+          unitTime,
+          unitLength,
+        );
         abcString += "|";
         if (section % 4 == 0) abcString += "\n";
         section += 1;
@@ -526,6 +573,7 @@ function durationToRestStrings(
             prevSectionEnd,
             sectionEnd,
             unitTime,
+            unitLength,
           );
           abcString += "|";
           if (section % 4 == 0) abcString += "\n";
@@ -533,11 +581,16 @@ function durationToRestStrings(
           prevSectionEnd = sectionEnd;
           sectionEnd = tempo.tick + section * sectionLength;
         }
-        abcString += durationToRestString(prevSectionEnd, endTick, unitTime);
+        abcString += durationToRestString(
+          prevSectionEnd,
+          endTick,
+          unitTime,
+          unitLength,
+        );
       }
     }
   } else if (round(startTick, 1e13) < round(endTick, 1e13)) {
-    abcString += durationToRestString(startTick, endTick, unitTime);
+    abcString += durationToRestString(startTick, endTick, unitTime, unitLength);
   }
   return abcString;
 }
@@ -705,6 +758,7 @@ function segmentToString(ns, ins, instrumentId, tempo) {
         chord[0].startTick,
         tempo,
         unitTime,
+        unitLength,
         sectionLength,
       );
     }
@@ -713,11 +767,12 @@ function segmentToString(ns, ins, instrumentId, tempo) {
         chord,
         nextChord,
         unitTime,
+        unitLength,
         sectionLength,
         tempo,
       );
     } else {
-      abcString += chordToString(chord, nextChord, unitTime);
+      abcString += chordToString(chord, nextChord, unitTime, unitLength);
     }
     if (nextChord) {
       abcString += durationToRestStrings(
@@ -725,6 +780,7 @@ function segmentToString(ns, ins, instrumentId, tempo) {
         nextChord[0].startTick,
         tempo,
         unitTime,
+        unitLength,
         sectionLength,
       );
     } else {
@@ -733,6 +789,7 @@ function segmentToString(ns, ins, instrumentId, tempo) {
         tempo.tickTo,
         tempo,
         unitTime,
+        unitLength,
         sectionLength,
       );
       if (!abcString.endsWith("\n")) {

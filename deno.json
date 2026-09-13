@@ -1,5 +1,6 @@
 {
-  "tasks": {
-    "test": "deno run -RWN test.js"
+  "imports": {
+    "abcjs": "npm:abcjs@^6.7.0",
+    "midi-file": "npm:midi-file@^1.2.4"
   }
 }

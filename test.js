@@ -3,8 +3,7 @@
 // you can work through them in order.
 //
 // Usage:
-//   deno run -RWN test.js \
-//     /path/to/midi/folder [--json report.json]
+//   deno run -R test.js /path/to/midi/folder [--json report.json]
 //
 // What counts as a problem:
 //   - error:   parseMidi/buildNoteSequence/notesToAbc throws
@@ -19,8 +18,8 @@
 // easier-to-read ABC output and fewer places for a bug to hide), with
 // track count and file size as tie-breakers.
 
-import { parseMidi } from "npm:midi-file@1.2.4";
-import abcjs from "npm:abcjs@6.7.0";
+import { parseMidi } from "midi-file";
+import abcjs from "abcjs";
 import { autoQuantizeTicks, buildNoteSequence } from "./src/parse-midi-core.js";
 import notesToAbc from "./src/midi2abc.js";
 
@@ -172,7 +171,7 @@ async function main() {
   const { dir, jsonPath } = parseArgs(Deno.args);
   if (!dir) {
     console.error(
-      "Usage: deno run --allow-read --allow-write --allow-net test_directory.js <directory> [--json report.json]",
+      "Usage: deno run -R test.js <directory> [--json report.json]",
     );
     Deno.exit(1);
   }

@@ -1,4 +1,6 @@
+import ABCJS from "https://cdn.jsdelivr.net/npm/abcjs@6.7.0/+esm";
 import tone2abc from "./midi2abc.js";
+import { cloneNoteSequence, midiToNoteSequence } from "./parse-midi.js";
 
 function toggleDarkMode() {
   const html = document.documentElement;
@@ -37,24 +39,31 @@ function convertUrlEvent(event) {
 
 async function convertFromUrlParams() {
   const query = new URLSearchParams(location.search);
-  ns = await core.urlToNoteSequence(query.get("url"));
-  nsCache = core.sequences.clone(ns);
+  ns = await urlToNoteSequence(query.get("url"));
+  nsCache = cloneNoteSequence(ns);
   setToolbar();
   convert(ns, query);
 }
 
 async function convertFromBlob(file, query) {
-  ns = await core.blobToNoteSequence(file);
-  nsCache = core.sequences.clone(ns);
+  const buffer = await file.arrayBuffer();
+  ns = midiToNoteSequence(buffer);
+  nsCache = cloneNoteSequence(ns);
   setToolbar();
   convert(ns, query);
 }
 
 async function convertFromUrl(midiUrl, query) {
-  ns = await core.urlToNoteSequence(midiUrl);
-  nsCache = core.sequences.clone(ns);
+  ns = await urlToNoteSequence(midiUrl);
+  nsCache = cloneNoteSequence(ns);
   setToolbar();
   convert(ns, query);
+}
+
+async function urlToNoteSequence(midiUrl) {
+  const response = await fetch(midiUrl);
+  const buffer = await response.arrayBuffer();
+  return midiToNoteSequence(buffer);
 }
 
 function setMIDIInfo(query) {
@@ -248,7 +257,7 @@ function setInstrumentsCheckbox() {
       } else {
         map.set(instrumentId, false);
       }
-      ns = core.sequences.clone(nsCache);
+      ns = cloneNoteSequence(nsCache);
       ns.notes = ns.notes.filter((note) => map.get(note.instrument));
       convert(ns);
     });
@@ -277,7 +286,7 @@ function setProgramsCheckbox() {
       } else {
         map.set(programId, false);
       }
-      ns = core.sequences.clone(nsCache);
+      ns = cloneNoteSequence(nsCache);
       ns.notes = ns.notes.filter((note) => map.get(note.program));
       convert(ns);
     });

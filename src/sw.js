@@ -1,11 +1,13 @@
-const cacheName = "2026-09-09 00:00";
+const cacheName = "2026-09-13 00:00";
 const urlsToCache = [
   "/midi2abc/",
   "/midi2abc/index.js",
   "/midi2abc/midi2abc.js",
+  "/midi2abc/parse-midi.js",
   "/midi2abc/abt.mid",
   "/midi2abc/favicon/favicon.svg",
-  "https://cdn.jsdelivr.net/combine/npm/tone@14.7.77,npm/@magenta/music@1.23.1/es6/core.js,npm/abcjs@6.7.0/dist/abcjs-basic-min.js",
+  "https://cdn.jsdelivr.net/npm/abcjs@6.7.0/+esm",
+  "https://cdn.jsdelivr.net/npm/midi-file@1.2.4/+esm",
 ];
 
 async function preCache() {

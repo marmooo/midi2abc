@@ -6,8 +6,6 @@ const urlsToCache = [
   "/midi2abc/parse-midi.js",
   "/midi2abc/abt.mid",
   "/midi2abc/favicon/favicon.svg",
-  "https://cdn.jsdelivr.net/npm/abcjs@6.7.0/+esm",
-  "https://cdn.jsdelivr.net/npm/midi-file@1.2.4/+esm",
 ];
 
 async function preCache() {

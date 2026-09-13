@@ -21,7 +21,7 @@
 
 import { parseMidi } from "npm:midi-file@1.2.4";
 import abcjs from "npm:abcjs@6.7.0";
-import { buildNoteSequence } from "./src/parse-midi-core.js";
+import { autoQuantizeTicks, buildNoteSequence } from "./src/parse-midi-core.js";
 import notesToAbc from "./src/midi2abc.js";
 
 function joinPath(dir, name) {
@@ -102,6 +102,7 @@ async function testFile(filePath) {
     const bytes = await Deno.readFile(filePath);
     const parsed = parseMidi(bytes);
     ns = buildNoteSequence(parsed);
+    autoQuantizeTicks(ns, 8); // same default as the browser app
     abcString = notesToAbc(ns, { title: basename(filePath) });
   } catch (err) {
     report.status = "error";

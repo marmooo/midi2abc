@@ -142,3 +142,77 @@ export function buildNoteSequence(parsed) {
 export function cloneNoteSequence(ns) {
   return structuredClone(ns);
 }
+
+// Real-world (human-performed / non-quantized) MIDI files often have note
+// start/end ticks that don't land on any clean rhythmic grid (a note ending
+// a couple of ticks after the next one starts, timing drifting by a handful
+// of ticks throughout). ABC (like any standard notation) can only represent
+// rational, grid-aligned durations, so feeding such raw ticks straight into
+// midi2abc.js causes cascading "duration not representable" approximation
+// errors. Snapping every note's start/end to the nearest multiple of
+// ticksPerBeat/division (32nd notes by default) fixes this: it's the same
+// kind of quantization any notation software applies when importing a
+// performance recording. Chords/legato that were only a few ticks off from
+// lining up will usually snap into exact alignment as a side effect.
+function insertionSort(arr, compare) {
+  for (let i = 1; i < arr.length; i++) {
+    const current = arr[i];
+    let j = i - 1;
+    while (j >= 0 && compare(arr[j], current) > 0) {
+      arr[j + 1] = arr[j];
+      j -= 1;
+    }
+    arr[j + 1] = current;
+  }
+  return arr;
+}
+
+export function quantizeTicks(ns, division = 8) {
+  const grid = ns.ticksPerBeat / division;
+  for (let i = 0; i < ns.notes.length; i++) {
+    const note = ns.notes[i];
+    note.startTick = Math.round(note.startTick / grid) * grid;
+    note.endTick = Math.round(note.endTick / grid) * grid;
+    if (note.endTick <= note.startTick) {
+      note.endTick = note.startTick + grid;
+    }
+  }
+  // Rounding can change the relative order of notes within an instrument,
+  // so re-sort (stably, by instrument then startTick) to keep the
+  // contiguous-per-instrument grouping that splitInstruments() relies on.
+  insertionSort(ns.notes, (a, b) => {
+    if (a.instrument !== b.instrument) return a.instrument - b.instrument;
+    return a.startTick - b.startTick;
+  });
+  let totalTicks = 0;
+  for (let i = 0; i < ns.notes.length; i++) {
+    if (ns.notes[i].endTick > totalTicks) totalTicks = ns.notes[i].endTick;
+  }
+  if (totalTicks > ns.totalTicks) ns.totalTicks = totalTicks;
+  return ns;
+}
+
+function alignmentRatio(ns, division) {
+  if (ns.notes.length === 0) return 1;
+  const grid = ns.ticksPerBeat / division;
+  let onGrid = 0;
+  for (let i = 0; i < ns.notes.length; i++) {
+    if (ns.notes[i].startTick % grid === 0) onGrid++;
+  }
+  return onGrid / ns.notes.length;
+}
+
+// Only quantizes if the file doesn't already look grid-aligned. A properly
+// notated/quantized file (even one using triplets, which are legitimately
+// off this power-of-2 grid) will already have the vast majority of notes
+// landing exactly on grid ticks; blindly quantizing it would snap those
+// triplets onto the wrong, nearby grid position and corrupt them. A
+// human-performed, non-quantized file has no such alignment (note starts
+// land more or less uniformly at any tick offset), so snapping every note
+// to the nearest grid line is the right call there.
+export function autoQuantizeTicks(ns, division = 8, threshold = 0.9) {
+  if (alignmentRatio(ns, division) < threshold) {
+    quantizeTicks(ns, division);
+  }
+  return ns;
+}

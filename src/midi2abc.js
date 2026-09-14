@@ -8,7 +8,6 @@ function fixIllegalDuration(
 ) {
   const error = keyLength.error;
   if (error != 0) {
-    let abcString = "";
     if (keyLength.numerator / keyLength.denominator > 1) {
       const base = 60;
       const startTick = chord[0].startTick;
@@ -16,29 +15,40 @@ function fixIllegalDuration(
       const newDuration = base * keyLength.numerator / keyLength.denominator /
         unitTime;
       const t = chord[0].startTick + newDuration;
+      const originalTies = chord.map((note) => note.tie);
+      // chordToString()/noteToString() call getTupletString(), which
+      // advances shared, order-dependent tuplet state (tupletCount /
+      // tupletNum). That state must be advanced in the same order the
+      // resulting ABC text will actually be read, so the first half
+      // (printed first) must be computed before the second half (printed
+      // second) - not the other way around.
+      for (let i = 0; i < chord.length; i++) {
+        chord[i].endTick = t;
+        chord[i].tie = true; // provisionally ties into the second half
+      }
+      let abc1 = chordToString(chord, null, unitTime, unitLength);
       for (let i = 0; i < chord.length; i++) {
         chord[i].startTick = t;
+        chord[i].endTick = endTick;
+        chord[i].tie = originalTies[i];
       }
       const abc2 = chordToString(chord, nextChord, unitTime, unitLength);
+      if (abc2 == "") {
+        // Nothing to tie into: drop the provisional tie marks again.
+        abc1 = abc1.replaceAll("-", "");
+      }
       for (let i = 0; i < chord.length; i++) {
         chord[i].startTick = startTick;
-        chord[i].endTick = t;
-      }
-      if (abc2 == "") {
-        for (let i = 0; i < chord.length; i++) chord[i].tie = false;
-      } else {
-        for (let i = 0; i < chord.length; i++) chord[i].tie = true;
-      }
-      const abc1 = chordToString(chord, null, unitTime, unitLength);
-      for (let i = 0; i < chord.length; i++) {
         chord[i].endTick = endTick;
+        chord[i].tie = originalTies[i];
       }
       duration = round(duration, 1e6);
       console.log(
-        `illegal duration is rounded: ${duration}, ${error}, ${abcString}`,
+        `illegal duration is rounded: ${duration}, ${error}, ${abc1}${abc2}`,
       );
       return abc1 + abc2;
     } else if (nextChord) {
+      let abcString = "";
       const diff = error / unitTime;
       if (chord[0].endTick == nextChord[0].startTick) {
         for (let i = 0; i < nextChord.length; i++) {

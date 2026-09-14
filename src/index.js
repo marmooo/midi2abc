@@ -225,12 +225,24 @@ function initABCEditor() {
   new ABCJS.Editor("abc", editorOptions);
 }
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[c]);
+}
+
 function getCheckboxString(name, label) {
+  const safeName = escapeHtml(name);
+  const safeLabel = escapeHtml(label);
   return `
 <div class="form-check form-check-inline">
   <label class="form-check-label">
-    <input class="form-check-input" name="${name}" value="${label}" type="checkbox" checked>
-    ${label}
+    <input class="form-check-input" name="${safeName}" value="${safeLabel}" type="checkbox" checked>
+    ${safeLabel}
   </label>
 </div>`;
 }

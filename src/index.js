@@ -1,4 +1,4 @@
-import ABCJS from "https://cdn.jsdelivr.net/npm/abcjs@6.7.0/+esm";
+import ABCJS from "https://cdn.jsdelivr.net/npm/abcjs@6.7.1/+esm";
 import notesToAbc from "./midi2abc.js";
 import { cloneNoteSequence, midiToNoteSequence } from "./parse-midi.js";
 

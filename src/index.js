@@ -73,7 +73,7 @@ function setMIDIInfo(query) {
     const maintainer = query.get("maintainer");
     const web = query.get("web");
     const license = query.get("license");
-    document.getElementById("midiTitle").textContent = title;
+    document.getElementById("title").textContent = title;
     document.getElementById("composer").textContent = composer;
     if (web) {
       const a = document.createElement("a");
@@ -89,7 +89,7 @@ function setMIDIInfo(query) {
       document.getElementById("license").textContent = license;
     }
   } else {
-    document.getElementById("midiTitle").textContent = "";
+    document.getElementById("title").textContent = "";
     document.getElementById("composer").textContent = "";
     document.getElementById("maintainer").textContent = "";
     document.getElementById("license").textContent = "";

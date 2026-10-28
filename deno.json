@@ -1,6 +1,6 @@
 {
   "imports": {
-    "abcjs": "npm:abcjs@^6.7.0",
+    "abcjs": "npm:abcjs@^6.7.2",
     "midi-file": "npm:midi-file@^1.2.4"
   }
 }

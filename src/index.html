@@ -40,13 +40,7 @@
     <style>
       .abcjs-highlight { fill: #0a9ecc; }
       .abcjs-cursor { stroke: red; }
-      html[data-bs-theme="dark"] .favicon { filter: invert(1) hue-rotate(180deg); }
 
-      .border-dashed { border-style: dashed !important; }
-      #selectPanel {
-        position: relative;
-        max-width: 40rem;
-      }
       #selectPanel.drag-active {
         border-color: var(--bs-warning) !important;
         background: color-mix(in srgb, var(--bs-warning) 8%, var(--bs-body-bg));
@@ -65,6 +59,55 @@
         font-weight: 600;
         pointer-events: none;
       }
+
+      .table-columns {
+        position: relative;
+      }
+      .table-columns summary {
+        cursor: pointer;
+        user-select: none;
+        list-style: none;
+        padding: 0.375rem 0.75rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: var(--bs-border-radius);
+        background: var(--bs-body-bg);
+      }
+      .table-columns summary::-webkit-details-marker {
+        display: none;
+      }
+      .table-columns summary::after {
+        content: " ▼";
+        font-size: 0.75em;
+      }
+      .table-columns[open]
+        summary::after {
+        content: " ▲";
+      }
+      .table-columns ul {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        min-width: 180px;
+        margin: 0;
+        padding: 8px;
+        list-style: none;
+        border: 1px solid var(--bs-border-color);
+        border-radius: var(--bs-border-radius);
+        background: var(--bs-body-bg);
+        box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+        z-index: 1000;
+      }
+      .table-columns li + li {
+        margin-top: 6px;
+      }
+      .table-columns-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      html[data-bs-theme="dark"] .favicon { filter: invert(1) hue-rotate(180deg); }
     </style>
     <script data-ad-client="ca-pub-6459713332128733" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
   </head>
@@ -95,7 +138,7 @@
         <div class="alert alert-warning">Please turn on JavaScript.</div>
       </noscript>
       <p>Convert MIDI to ABC notation.</p>
-      <div id="selectPanel" class="card border-secondary-subtle border-dashed mt-3 mx-auto">
+      <div id="selectPanel" class="card border-secondary-subtle mt-3 mx-auto">
         <div class="card-body py-3 px-3 d-flex flex-wrap gap-2 align-items-center justify-content-center">
           <button id="selectFile" type="button" class="btn btn-primary rounded-pill">Select file</button>
           <input id="inputFile" type="file" accept=".mid,.midi" hidden>
@@ -305,9 +348,15 @@
       </div>
     </div><!-- /screenLibrary -->
     <div class="drop-inline-css
-      offcanvas-backdrop fade show
-      offcanvas showing hiding
-      d-none" data-bs-backdrop="false" data-bs-scroll="true">
+      modal-backdrop show gap-1
+      form-control form-control-sm is-invalid
+      pagination page-item page-link active
+      form-check form-check-label
+      form-select form-select-sm p-1 border border-secondary
+      list-group shadow-sm list-group-item py-1 px-2
+      badge bg-body-secondary text-body border fw-normal ms-2 text-decoration-none
+      d-none">
+      <input class="form-check-input" type="radio">
     </div>
     <script src="index.js" type="module"></script>
   </body>

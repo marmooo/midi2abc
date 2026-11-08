@@ -1,6 +1,14 @@
 import ABCJS from "https://cdn.jsdelivr.net/npm/abcjs@6.7.2/+esm";
+import { Modal } from "https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/+esm";
+import { MidiLibrary } from "https://marmooo.github.io/free-midi/midi-library.js";
 import notesToAbc from "./midi2abc.js";
 import { cloneNoteSequence, midiToNoteSequence } from "./parse-midi.js";
+
+const MIDI_DB_MODERN = "https://midi-db.pages.dev";
+const MIDI_DB_CLASSICAL = "https://marmooo.github.io/classical-midi-db";
+/** Currently selected MIDI DB base URL (modern or classical). */
+let currentMidiDb = MIDI_DB_MODERN;
+const htmlLang = document.documentElement.lang || "en";
 
 function toggleDarkMode() {
   const html = document.documentElement;
@@ -19,33 +27,68 @@ function toggleABCPanel() {
   resizeABC(textarea);
 }
 
-function dropFileEvent(event) {
-  event.preventDefault();
-  const file = event.dataTransfer.files[0];
-  const dt = new DataTransfer();
-  dt.items.add(file);
-  const input = document.getElementById("inputFile");
-  input.files = dt.files;
-  convertFromBlob(file);
-}
-
 function convertFileEvent(event) {
   convertFromBlob(event.target.files[0]);
 }
 
-function convertUrlEvent(event) {
-  convertFromUrl(event.target.value);
+function toInfoQuery(row) {
+  const query = new URLSearchParams();
+  const fields = ["title", "composer", "maintainer", "web", "license"];
+  for (let i = 0; i < fields.length; i++) {
+    const value = row[fields[i]];
+    if (value) query.set(fields[i], value);
+  }
+  return query;
 }
 
+/**
+ * ?c=<siteId>&i=<index>（classical は &db=c）から曲を読み込む。
+ * free-midi からの共有リンク専用（旧 ?url= は廃止）。
+ */
 async function convertFromUrlParams() {
   const query = new URLSearchParams(location.search);
-  ns = await urlToNoteSequence(query.get("url"));
-  nsCache = cloneNoteSequence(ns);
-  setToolbar();
-  convert(ns, query);
+  const collectionId = query.get("c");
+  const index = Number.parseInt(query.get("i") ?? "", 10);
+  if (!collectionId || !Number.isInteger(index) || index < 0) return;
+
+  try {
+    const dbBase = query.get("db") === "c" ? MIDI_DB_CLASSICAL : MIDI_DB_MODERN;
+    const lang = ["ja", "en"].includes(htmlLang) ? htmlLang : "en";
+    const listUrl = `${dbBase}/json/${
+      encodeURIComponent(collectionId)
+    }/${lang}.json`;
+    const list = await (await fetch(listUrl)).json();
+    const row = list[index];
+    if (!row?.file) {
+      throw new Error(`MIDI not found: ${collectionId}#${index}`);
+    }
+
+    const col = midiLibrary.collections?.get(collectionId);
+    if (col) {
+      if (!row.collection) row.collection = col.name;
+      if (!row.composer && col.composer) row.composer = col.composer;
+      if (!row.maintainer && col.maintainer) row.maintainer = col.maintainer;
+      if (!row.web && col.web) row.web = col.web;
+      if (!row.license && col.license) row.license = col.license;
+    }
+
+    if (dbBase !== midiLibrary.midiDB) {
+      currentMidiDb = dbBase;
+      midiLibrary.midiDB = dbBase;
+    }
+
+    const midiUrl = `${dbBase}/${row.file}`;
+    ns = await urlToNoteSequence(midiUrl);
+    nsCache = cloneNoteSequence(ns);
+    setToolbar();
+    convert(ns, toInfoQuery(row));
+  } catch (error) {
+    console.error("Failed to load MIDI from query:", error);
+  }
 }
 
 async function convertFromBlob(file, query) {
+  if (!file) return;
   const buffer = await file.arrayBuffer();
   ns = midiToNoteSequence(buffer);
   nsCache = cloneNoteSequence(ns);
@@ -66,34 +109,84 @@ async function urlToNoteSequence(midiUrl) {
   return midiToNoteSequence(buffer);
 }
 
+function toHttpURL(text) {
+  try {
+    const url = new URL(text);
+    if (url.protocol === "http:" || url.protocol === "https:") return url.href;
+  } catch { /* not a valid URL */ }
+  return null;
+}
+
+function createExternalLink(href, text) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.textContent = text;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  return a;
+}
+
+// Shows "title" and "composer · maintainer [license]" of the MIDI.
 function setMIDIInfo(query) {
-  if (query instanceof URLSearchParams) {
-    const title = query.get("title");
-    const composer = query.get("composer");
-    const maintainer = query.get("maintainer");
-    const web = query.get("web");
-    const license = query.get("license");
-    document.getElementById("title").textContent = title;
-    document.getElementById("composer").textContent = composer;
-    if (web) {
-      const a = document.createElement("a");
-      a.href = web;
-      a.textContent = maintainer;
-      document.getElementById("maintainer").replaceChildren(a);
-    } else {
-      document.getElementById("maintainer").textContent = maintainer;
-    }
-    try {
-      new URL(license);
-    } catch {
-      document.getElementById("license").textContent = license;
-    }
-  } else {
-    document.getElementById("title").textContent = "";
-    document.getElementById("composer").textContent = "";
-    document.getElementById("maintainer").textContent = "";
-    document.getElementById("license").textContent = "";
+  const info = document.getElementById("midiInfo");
+  const title = document.getElementById("title");
+  const meta = document.getElementById("meta");
+  meta.replaceChildren();
+  if (!(query instanceof URLSearchParams)) {
+    title.textContent = "";
+    info.hidden = true;
+    return;
   }
+  const titleText = query.get("title") ?? "";
+  const composer = query.get("composer") ?? "";
+  const maintainer = query.get("maintainer") ?? "";
+  const web = query.get("web") ?? "";
+  const license = query.get("license") ?? "";
+
+  const credits = [];
+  if (composer) {
+    const span = document.createElement("span");
+    span.textContent = composer;
+    credits.push(span);
+  }
+  if (maintainer) {
+    const webURL = web ? toHttpURL(web) : null;
+    if (webURL) {
+      credits.push(createExternalLink(webURL, maintainer));
+    } else {
+      const span = document.createElement("span");
+      span.textContent = maintainer;
+      credits.push(span);
+    }
+  }
+  for (let i = 0; i < credits.length; i++) {
+    if (i > 0) meta.appendChild(document.createTextNode(" · "));
+    meta.appendChild(credits[i]);
+  }
+
+  if (license) {
+    const licenseURL = toHttpURL(license);
+    let badge;
+    if (licenseURL) {
+      badge = createExternalLink(licenseURL, "License");
+      badge.classList.add("text-decoration-none");
+    } else {
+      badge = document.createElement("span");
+      badge.textContent = license;
+    }
+    badge.classList.add(
+      "badge",
+      "bg-body-secondary",
+      "text-body",
+      "border",
+      "fw-normal",
+    );
+    if (credits.length > 0) badge.classList.add("ms-2");
+    meta.appendChild(badge);
+  }
+
+  title.textContent = titleText;
+  info.hidden = titleText === "" && meta.childNodes.length === 0;
 }
 
 function convert(ns, query) {
@@ -342,7 +435,70 @@ initABCEditor();
 let ns;
 let nsCache;
 let synthControl;
-if (location.search) {
+
+// ---------------------------------------------------------------------------
+// MIDI library（Bootstrap modal 内に MidiLibrary で一覧表示）
+// ---------------------------------------------------------------------------
+
+const libraryModal = Modal.getOrCreateInstance(
+  document.getElementById("screenLibrary"),
+);
+
+const midiLibrary = new MidiLibrary({
+  midiDB: currentMidiDb,
+  table: "libraryTable",
+  pagination: "libraryPagination",
+  columns: "libraryColumns",
+  collections: "libraryCollections",
+  instruments: "libraryInstruments",
+  lang: ["ja", "en"].includes(htmlLang) ? htmlLang : "en",
+  onSelect: async (row) => {
+    const midiUrl = `${midiLibrary.midiDB}/${row.file}`;
+    ns = await urlToNoteSequence(midiUrl);
+    nsCache = cloneNoteSequence(ns);
+    setToolbar();
+    convert(ns, toInfoQuery(row));
+    libraryModal.hide();
+  },
+});
+midiLibrary.load();
+
+/** Switch MIDI library between modern and classical collections. */
+let switchMidiCategoryBusy = false;
+async function switchMidiCategory(category) {
+  const nextDb = category === "classical" ? MIDI_DB_CLASSICAL : MIDI_DB_MODERN;
+  if (midiLibrary.midiDB === nextDb && midiLibrary.fullData) return;
+  if (switchMidiCategoryBusy) return;
+  switchMidiCategoryBusy = true;
+  try {
+    currentMidiDb = nextDb;
+    midiLibrary.midiDB = nextDb;
+    midiLibrary.collections.clear();
+    midiLibrary.fullData = null;
+    midiLibrary.destroy();
+    await midiLibrary.load();
+  } catch (err) {
+    console.error("Failed to switch MIDI category:", err);
+  } finally {
+    switchMidiCategoryBusy = false;
+  }
+}
+
+function initMidiCategoryRadios() {
+  const radios = document.querySelectorAll('input[name="midiLibraryCategory"]');
+  for (const radio of radios) {
+    radio.addEventListener("change", () => {
+      if (!radio.checked) return;
+      switchMidiCategory(radio.value).catch((err) =>
+        console.error("switchMidiCategory failed:", err)
+      );
+    });
+  }
+}
+initMidiCategoryRadios();
+
+// ?c=&i= があればそれを優先、なければデモ曲
+if (new URLSearchParams(location.search).has("c")) {
   convertFromUrlParams();
 } else {
   const query = initQuery();
@@ -351,9 +507,35 @@ if (location.search) {
 
 document.getElementById("toggleDarkMode").onclick = toggleDarkMode;
 document.getElementById("toggleABCPanel").onclick = toggleABCPanel;
-document.ondragover = (e) => {
-  e.preventDefault();
+document.getElementById("selectFile").onclick = () => {
+  document.getElementById("inputFile").click();
 };
-document.ondrop = dropFileEvent;
 document.getElementById("inputFile").onchange = convertFileEvent;
-document.getElementById("inputUrl").onchange = convertUrlEvent;
+
+// ドラッグ＆ドロップは selectPanel 上のみ（midi2audio と同じ）
+const selectPanel = document.getElementById("selectPanel");
+let dragN = 0;
+selectPanel.addEventListener("dragenter", (e) => {
+  e.preventDefault();
+  dragN++;
+  selectPanel.classList.add("drag-active");
+});
+selectPanel.addEventListener("dragleave", (e) => {
+  e.preventDefault();
+  dragN--;
+  if (dragN <= 0) {
+    dragN = 0;
+    selectPanel.classList.remove("drag-active");
+  }
+});
+selectPanel.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "copy";
+});
+selectPanel.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dragN = 0;
+  selectPanel.classList.remove("drag-active");
+  const file = e.dataTransfer.files[0];
+  if (file) convertFromBlob(file);
+});

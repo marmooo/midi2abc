@@ -452,6 +452,7 @@ const midiLibrary = new MidiLibrary({
   collections: "libraryCollections",
   instruments: "libraryInstruments",
   lang: ["ja", "en"].includes(htmlLang) ? htmlLang : "en",
+  excludeNonRedistributable: true,
   onSelect: async (row) => {
     const midiUrl = `${midiLibrary.midiDB}/${row.file}`;
     ns = await urlToNoteSequence(midiUrl);
